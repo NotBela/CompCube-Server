@@ -21,11 +21,11 @@ public static class Database
         _connection.Open();
         
         var createDBCommand = _connection.CreateCommand();
-        createDBCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData ( id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL );";
+        createDBCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData ( id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, discordId TEXT );";
         createDBCommand.ExecuteNonQuery();
     }
 
-    public static User? GetUser(string ID)
+    public static User? GetUserById(string ID)
     {
         var command = _connection.CreateCommand();
         command.CommandText = $"SELECT * FROM userData WHERE userData.id = {ID}";
@@ -41,6 +41,28 @@ public static class Database
             return new User(id, mmr);
         }
 
+        return null;
+    }
+
+    public static User? GetUserByDiscordId(string discordId)
+    {
+        var command = _connection.CreateCommand();
+        command.CommandText = $"SELECT * FROM userData WHERE discordId = {discordId}";
+        
+        using var reader = command.ExecuteReader();
+
+        while (reader.Read())
+        {
+            if (reader.FieldCount == 0) 
+                return null;
+            
+            var id = reader.GetString(0);
+            var mmr = reader.GetInt32(1);
+            var discord = reader.GetString(2);
+            
+            return new User(id, mmr, discord);
+        }
+        
         return null;
     }
 
