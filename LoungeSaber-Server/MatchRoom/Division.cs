@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using LoungeSaber_Server.Models;
 using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.SkillDivision;
@@ -10,19 +11,34 @@ public class Division
 
     public string DivisionName { get; private set; }
     public Color DivisionColor { get; private set; }
+    
+    public Map.MapTypes[] DisallowedMapTypes { get; private set; }
+    
 
     [JsonIgnore]
     public readonly MatchRoom.MatchRoom DivisionRoom;
 
     // TODO: make constructor private
-    public Division(int minMMR, int maxMMR, string divisionName, Color divisionColor)
+    public Division(int minMMR, int maxMMR, string divisionName, Color divisionColor, Map.MapTypes[] disallowedMapTypes)
     {
         MinMMR = minMMR;
         MaxMMR = maxMMR;
         DivisionName = divisionName;
         DivisionColor = divisionColor;
+        DisallowedMapTypes = disallowedMapTypes;
 
         DivisionRoom = new MatchRoom.MatchRoom(this);
+    }
+
+    public List<string> GetRandomMaps(int amount)
+    {
+        var mapList = new List<string>();
+        while (mapList.Count < amount)
+        {
+            
+        }
+
+        return mapList;
     }
 
     public static Division Parse(string json)

@@ -8,7 +8,8 @@ namespace LoungeSaber_Server
         {
             try
             {
-                Database.Start();
+                UserData.Instance.Start();
+                MapData.Instance.Start();
                 Api.Api.Start();
             }
             catch (Exception e)
@@ -17,7 +18,8 @@ namespace LoungeSaber_Server
             }
             finally
             {
-                Database.Stop();
+                UserData.Instance.Stop();
+                MapData.Instance.Stop();
             }
         }
     }

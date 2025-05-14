@@ -1,74 +1,41 @@
 ﻿using System.Data;
-using LoungeSaber_Server.Models;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.Sqlite;
 
 namespace LoungeSaber_Server.SQL;
 
-public static class Database
+public abstract class Database
 {
-    private static readonly SqliteConnection _connection = new($"Data Source={Path.Combine(DataFolderPath, "LoungeData.db")}");
-
-    private static string DataFolderPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
-
-    public static bool IsOpen => _connection.State == ConnectionState.Open;
+    protected abstract string DatabaseName { get; }
     
-    public static void Start()
+    protected readonly SqliteConnection _connection;
+
+    protected static string DataFolderPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+
+    public bool IsOpen => _connection.State == ConnectionState.Open;
+
+    protected Database()
+    {
+        _connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db")}");
+    }
+    
+    public void Start()
     {
         if (IsOpen) return;
 
         Directory.CreateDirectory(DataFolderPath);
         
         _connection.Open();
-        
-        var createDBCommand = _connection.CreateCommand();
-        createDBCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData ( id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, discordId TEXT );";
-        createDBCommand.ExecuteNonQuery();
+        CreateInitialTable();
     }
-
-    public static User? GetUserById(string ID)
+    
+    public void Stop()
     {
-        var command = _connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM userData WHERE userData.id = {ID}";
-        using var reader = command.ExecuteReader();
+        if (!IsOpen) 
+            return;
         
-        while (reader.Read())
-        {
-            if (reader.FieldCount == 0) 
-                return null;
-            
-            var id = reader.GetString(0);
-            var mmr = reader.GetInt32(1);
-            return new User(id, mmr);
-        }
-
-        return null;
-    }
-
-    public static User? GetUserByDiscordId(string discordId)
-    {
-        var command = _connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM userData WHERE discordId = {discordId}";
-        
-        using var reader = command.ExecuteReader();
-
-        while (reader.Read())
-        {
-            if (reader.FieldCount == 0) 
-                return null;
-            
-            var id = reader.GetString(0);
-            var mmr = reader.GetInt32(1);
-            var discord = reader.GetString(2);
-            
-            return new User(id, mmr, discord);
-        }
-        
-        return null;
-    }
-
-    public static void Stop()
-    {
-        if (!IsOpen) return;
         _connection.Close();
     }
+
+    protected abstract void CreateInitialTable();
 }

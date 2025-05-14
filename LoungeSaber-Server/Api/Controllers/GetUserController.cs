@@ -12,7 +12,7 @@ public class GetUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<User> GetUserFromId(string userId)
     {
-        var user = Database.GetUserById(userId);
+        UserData.Instance.TryGetUserById(userId, out var user);
 
         if (user == null) return NotFound();
         return user;
@@ -22,7 +22,7 @@ public class GetUserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<User> GetUserFromDiscordId(string discordId)
     {
-        var user = Database.GetUserByDiscordId(discordId);
+        var user = UserData.Instance.GetUserByDiscordId(discordId);
         
         if (user == null) 
             return NotFound();

@@ -7,6 +7,8 @@ public class ConnectedUser
 {
     public readonly User UserInfo;
     private readonly TcpClient _client;
+    
+    public bool IsInMatch { get; private set; } = false;
 
     public ConnectedUser(User user, TcpClient client)
     {
