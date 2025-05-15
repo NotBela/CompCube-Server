@@ -22,5 +22,12 @@ namespace LoungeSaber_Server
                 MapData.Instance.Stop();
             }
         }
+
+        public static void LogError(string text)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(text);
+            Console.ResetColor();
+        }
     }
 }

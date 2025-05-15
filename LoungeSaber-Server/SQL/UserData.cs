@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Runtime.CompilerServices;
 using LoungeSaber_Server.Models;
 using Microsoft.Data.Sqlite;
 
@@ -7,7 +8,7 @@ namespace LoungeSaber_Server.SQL;
 public class UserData : Database
 {
     public static readonly UserData Instance = new();
-    
+
     public bool TryGetUserById(string ID, out User? user)
     {
         user = null;

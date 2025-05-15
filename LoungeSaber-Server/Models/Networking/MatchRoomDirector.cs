@@ -40,8 +40,8 @@ public static class MatchRoomDirector
                     continue;
                 }
 
-                if (!UserData.Instance.TryGetUserById(userId.ToString(), out var user))
-                    UserData.Instance.AddNewUserToDatabase(userId.ToString(), out user);
+                if (!UserData.Instance.TryGetUserById(userId.ToObject<string>()!, out var user))
+                    UserData.Instance.AddNewUserToDatabase(userId.ToObject<string>()!, out user);
 
                 if (user == null)
                 {
@@ -49,16 +49,14 @@ public static class MatchRoomDirector
                     continue;
                 }
 
-                if (!division?.DivisionRoom.JoinRoom(new ConnectedUser(user, client)) ?? true) 
+                if (!division?.DivisionLobby.JoinRoom(new ConnectedUser(user, client)) ?? false)
                     continue;
                 
                 client.Close();
             }
             catch (Exception e)
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine(e);
-                Console.ResetColor();
+                Program.LogError(e.Message);
                 client.Close();
             }
         }

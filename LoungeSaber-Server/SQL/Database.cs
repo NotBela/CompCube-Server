@@ -18,10 +18,11 @@ public abstract class Database
     {
         _connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db")}");
     }
-    
+
     public void Start()
     {
-        if (IsOpen) return;
+        if (IsOpen) 
+            return;
 
         Directory.CreateDirectory(DataFolderPath);
         

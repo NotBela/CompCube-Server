@@ -6,15 +6,15 @@ using Newtonsoft.Json.Linq;
 
 namespace LoungeSaber_Server.MatchRoom;
 
-public class MatchRoom
+public class MatchLobby
 {
     public readonly Division Division;
     
     public List<ConnectedUser> ConnectedUsers = [];
 
-    public bool MatchInProgress { get; private set; } = false;
+    public bool MatchesInProgress { get; private set; } = false;
     
-    public MatchRoom(Division division)
+    public MatchLobby(Division division)
     {
         Division = division;
     }
@@ -29,13 +29,13 @@ public class MatchRoom
         return true;
     }
     
-    public bool CanStartMatch => ConnectedUsers.Count % 2 == 0 && ConnectedUsers.Count > 0 && !MatchInProgress;
+    public bool CanStartMatch => ConnectedUsers.Count % 2 == 0 && ConnectedUsers.Count > 0 && !MatchesInProgress;
 
-    public async Task StartMatch()
+    public async Task StartMatches()
     {
-        if (MatchInProgress) return;
+        if (MatchesInProgress) return;
 
-        var usersInMatch = ConnectedUsers.ToArray();
+        var usersInDivision = ConnectedUsers.ToArray();
 
         var startingTime = DateTime.UtcNow.Add(new TimeSpan(0, 0, 0, 5));
 
@@ -44,23 +44,37 @@ public class MatchRoom
             {"startTime", startingTime.ToString(CultureInfo.InvariantCulture)}
         });
 
-        await SendToClients(startingMatchServerAction, usersInMatch);
+        await SendToClients(startingMatchServerAction, usersInDivision);
         
         await Task.Delay((int) startingTime.Subtract(DateTime.UtcNow).TotalMilliseconds);
 
-        var mapVotingOptions = Division.GetRandomMaps(3);
-
-        var mapVotingServerAction = new ServerAction(ServerAction.ActionType.ProvideVotes, new JObject()
-        {
-            {"mapVotingOptions", JArray.FromObject(mapVotingOptions)}
-        });
+        CreateMatches();
     }
 
-    public async Task SendToClients(ServerAction action, ConnectedUser[] users)
+    private Match[] CreateMatches()
+    {
+        var users = ConnectedUsers.ToList();
+        var random = new Random();
+
+        var matches = new List<Match>();
+        
+        while (users.Count > 0)
+        {
+            var randomUserOne = users[random.Next(0, users.Count + 1)];
+            users.Remove(randomUserOne);
+
+            var randomUserTwo = users[random.Next(0, users.Count + 1)];
+            users.Remove(randomUserTwo);
+            
+            matches.Add(new Match(randomUserOne, randomUserTwo, Division));
+        }
+
+        return matches.ToArray();
+    }
+
+    private async Task SendToClients(ServerAction action, ConnectedUser[] users)
     {
         foreach (var client in ConnectedUsers)
-        {
             await client.SendServerAction(action);
-        }
     }
 }

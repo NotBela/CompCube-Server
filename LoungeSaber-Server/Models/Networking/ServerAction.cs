@@ -13,10 +13,10 @@ public class ServerAction(ServerAction.ActionType actionType, JObject data)
     public enum ActionType
     {
         StartMatch,
-        ProvideVotes,
-        EndVoting,
-        PlayerJoined,
-        PlayerLeft,
-        StartWarning
+        OpponentVoted,
+        CreateMatch,
+        MatchEnded,
+        StartWarning,
+        Results
     }
 }

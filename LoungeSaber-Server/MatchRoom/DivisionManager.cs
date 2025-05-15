@@ -16,4 +16,6 @@ public static class DivisionManager
         value = Divisions.FirstOrDefault(x => x.DivisionName == name);
         return value != null;
     }
+    
+    // TODO: add division parsing from config
 }

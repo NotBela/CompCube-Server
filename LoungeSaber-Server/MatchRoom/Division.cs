@@ -16,7 +16,7 @@ public class Division
     
 
     [JsonIgnore]
-    public readonly MatchRoom.MatchRoom DivisionRoom;
+    public readonly MatchRoom.MatchLobby DivisionLobby;
 
     // TODO: make constructor private
     public Division(int minMMR, int maxMMR, string divisionName, Color divisionColor, Map.MapTypes[] disallowedMapTypes)
@@ -27,7 +27,7 @@ public class Division
         DivisionColor = divisionColor;
         DisallowedMapTypes = disallowedMapTypes;
 
-        DivisionRoom = new MatchRoom.MatchRoom(this);
+        DivisionLobby = new MatchRoom.MatchLobby(this);
     }
 
     public List<string> GetRandomMaps(int amount)
