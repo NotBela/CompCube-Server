@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
+using LoungeSaber_Server.Models.Maps;
 
 namespace LoungeSaber_Server.Models.Networking;
 
@@ -40,6 +41,7 @@ public class ConnectedUser
             switch (userAction.Type)
             {
                 case UserAction.ActionType.VoteOnMap:
+                    // TODO: replace this with only map hash
                     OnUserVoteRecieved?.Invoke(UserInfo, Map.Parse(userAction.JsonData));
                     break;
                 case UserAction.ActionType.PostScore:
