@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using LoungeSaber_Server.Models;
 using LoungeSaber_Server.Models.Maps;
+using LoungeSaber_Server.SQL;
 using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.SkillDivision;
@@ -31,11 +32,19 @@ public class Division
         DivisionLobby = new MatchRoom.MatchLobby(this);
     }
 
-    public List<string> GetRandomMaps(int amount)
+    public List<MapDifficulty> GetRandomMaps(int amount)
     {
-        var mapList = new List<string>();
+        var random = new Random();
+        
+        var mapList = new List<MapDifficulty>();
+        var allMaps = MapData.Instance.GetAllMaps();
+        
         while (mapList.Count < amount)
         {
+            var selectedMap = allMaps[random.Next(allMaps.Count + 1)];
+            
+            if (mapList.Contains(selectedMap)) 
+                continue;
             
         }
 

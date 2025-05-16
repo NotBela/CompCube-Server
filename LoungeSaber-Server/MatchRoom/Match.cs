@@ -14,7 +14,7 @@ public class Match
 
     private readonly Division Division;
 
-    private readonly List<Map> mapVotes = [];
+    private readonly List<MapDifficulty> mapVotes = [];
 
     public event Action? MatchEnded;
 
@@ -61,7 +61,7 @@ public class Match
         UserTwo.OnUserVoteRecieved += OnUserVoteRecieved;
     }
 
-    private async void OnUserVoteRecieved(User user, Map mapVote)
+    private async void OnUserVoteRecieved(User user, MapDifficulty mapDifficultyVote)
     {
         try
         {
@@ -69,13 +69,13 @@ public class Match
 
             votingUser.OnUserVoteRecieved -= OnUserVoteRecieved;
         
-            mapVotes.Add(mapVote);
+            mapVotes.Add(mapDifficultyVote);
 
             var nonVotingUser = votingUser.UserInfo.ID == UserOne.UserInfo.ID ? UserTwo : UserOne;
 
             await nonVotingUser.SendServerAction(new ServerAction(ServerAction.ActionType.OpponentVoted, new JObject
             {
-                {"opponentVote", JToken.FromObject(mapVote)}
+                {"opponentVote", JToken.FromObject(mapDifficultyVote)}
             }));
 
             if (mapVotes.Count != 2) 
@@ -102,13 +102,13 @@ public class Match
         MatchEnded?.Invoke();
     }
 
-    private async Task EndVoting(Map selectedMap)
+    private async Task EndVoting(MapDifficulty selectedMapDifficulty)
     {
         var startingTime = DateTime.UtcNow.AddSeconds(20);
         
         await SendActionToBothUsers(new ServerAction(ServerAction.ActionType.StartMatch, new JObject
         {
-            {"selectedMap", JToken.FromObject(selectedMap)},
+            {"selectedMap", JToken.FromObject(selectedMapDifficulty)},
             {"startingTime", startingTime.ToString(CultureInfo.InvariantCulture)}
         }));
         

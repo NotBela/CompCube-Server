@@ -22,13 +22,13 @@ public class MapData : Database
         createDBCommand.ExecuteNonQuery();
     }
 
-    public List<Map> GetAllMaps()
+    public List<MapDifficulty> GetAllMaps()
     {
         var getMapsQuery = _connection.CreateCommand();
         getMapsQuery.CommandText = "SELECT * FROM mapData";
         using var reader = getMapsQuery.ExecuteReader();
 
-        var mapList = new List<Map>();
+        var mapList = new List<MapDifficulty>();
         
         while (reader.Read())
         {
@@ -43,31 +43,30 @@ public class MapData : Database
                 mapCategory = MapDifficulty.MapTypes.Unknown;
             }
             
-            if (mapList.Any(i => i.hash == hash))
-            {
-                mapList.FirstOrDefault(i => i.hash == hash)!.difficulties.Add(new MapDifficulty(characteristic, difficulty, mapCategory));
-                continue;
-            }
-            
-            mapList.Add(new Map([new MapDifficulty(characteristic, difficulty, mapCategory)], hash));
+            mapList.Add(new MapDifficulty(hash,difficulty, characteristic, mapCategory));
         }
 
         return mapList;
     }
 
-    public List<Map> GetMapsOfCategory(MapDifficulty.MapTypes mapCategory)
+    public List<MapDifficulty> GetMapsOfCategory(MapDifficulty.MapTypes mapCategory)
     {
         var maps = GetAllMaps();
 
-        var returnMaps = new List<Map>();
+        var returnMaps = new List<MapDifficulty>();
 
         foreach (var map in maps)
         {
-            map.difficulties = map.difficulties.Where(i => i.Category == mapCategory).ToList();
-            if (map.difficulties.Count > 0)
+            if (map.Category == mapCategory)
                 returnMaps.Add(map);
         }
 
         return returnMaps;
+    }
+
+    public bool TryGetMapByHash(string hash, out MapDifficulty? map)
+    {
+        map = GetAllMaps().FirstOrDefault(i => i.Hash == hash);
+        return map != null;
     }
 }

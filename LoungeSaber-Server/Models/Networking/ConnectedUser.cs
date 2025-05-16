@@ -13,7 +13,7 @@ public class ConnectedUser
     public bool IsInMatch { get; private set; } = false;
     private bool ShouldContinueReadingStream { get; set; } = true;
 
-    public event Action<User, Map>? OnUserVoteRecieved;
+    public event Action<User, MapDifficulty>? OnUserVoteRecieved;
     public event Action<User, int>? OnUserScorePosted;
     public event Action<User>? OnUserLeftGame;
 
@@ -42,7 +42,7 @@ public class ConnectedUser
             {
                 case UserAction.ActionType.VoteOnMap:
                     // TODO: replace this with only map hash
-                    OnUserVoteRecieved?.Invoke(UserInfo, Map.Parse(userAction.JsonData));
+                    OnUserVoteRecieved?.Invoke(UserInfo, MapDifficulty.Parse(userAction.JsonData));
                     break;
                 case UserAction.ActionType.PostScore:
                     if (!userAction.JsonData.TryGetValue("score", out var score))
