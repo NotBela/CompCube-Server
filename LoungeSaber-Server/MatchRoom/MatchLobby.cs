@@ -41,7 +41,7 @@ public class MatchLobby
 
         var startingMatchServerAction = new ServerAction(ServerAction.ActionType.StartWarning, new JObject()
         {
-            {"startTime", startingTime.ToString(CultureInfo.InvariantCulture)}
+            {"startTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
         });
 
         await SendToClients(startingMatchServerAction, usersInDivision);
