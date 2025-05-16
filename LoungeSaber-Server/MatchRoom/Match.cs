@@ -109,7 +109,7 @@ public class Match
         await SendActionToBothUsers(new ServerAction(ServerAction.ActionType.StartMatch, new JObject
         {
             {"selectedMap", JToken.FromObject(selectedMap)},
-            {"startingTime", startingTime.ToString(CultureInfo.InvariantCulture)}
+            {"startingTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
         }));
         
         UserOne.OnUserScorePosted += OnUserScorePosted;

@@ -41,7 +41,6 @@ public class ConnectedUser
             switch (userAction.Type)
             {
                 case UserAction.ActionType.VoteOnMap:
-                    // TODO: replace this with only map hash
                     OnUserVoteRecieved?.Invoke(UserInfo, Map.Parse(userAction.JsonData));
                     break;
                 case UserAction.ActionType.PostScore:
