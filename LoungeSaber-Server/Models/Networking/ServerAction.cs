@@ -17,6 +17,7 @@ public class ServerAction(ServerAction.ActionType actionType, JObject data)
         CreateMatch,
         MatchEnded,
         StartWarning,
-        Results
+        Results,
+        UpdateConnectedUserCount
     }
 }

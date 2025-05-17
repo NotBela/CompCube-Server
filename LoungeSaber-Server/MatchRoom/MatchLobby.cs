@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
+using System.Timers;
 using LoungeSaber_Server.Models;
 using LoungeSaber_Server.Models.Networking;
 using LoungeSaber_Server.SkillDivision;
 using Newtonsoft.Json.Linq;
+using Timer = System.Timers.Timer;
 
 namespace LoungeSaber_Server.MatchRoom;
 
@@ -12,30 +14,46 @@ public class MatchLobby
     
     public List<ConnectedUser> ConnectedUsers = [];
 
-    public bool MatchesInProgress { get; private set; } = false;
+    private List<Match> InProgressMatches = [];
+
+    public bool MatchesInProgress => InProgressMatches.Count > 0;
+
+    private Timer _canStartNewMatchesTimer = new Timer
+    {
+        Enabled = false,
+        AutoReset = false,
+        Interval = 30000
+    };
+
+    private bool _didMatchTimerRunOut = false;
     
     public MatchLobby(Division division)
     {
         Division = division;
     }
     
-    public bool CanJoinRoom(int mmr) => mmr >= Division.MinMMR && (Division.MaxMMR == 0 || mmr <= Division.MaxMMR);
+    private bool CanJoinRoom(int mmr) => mmr >= Division.MinMMR && (Division.MaxMMR == 0 || mmr <= Division.MaxMMR);
 
-    public bool JoinRoom(ConnectedUser user)
+    public async Task<bool> JoinRoom(ConnectedUser user)
     {
-        if (!CanJoinRoom(user.UserInfo.MMR)) return false;
+        if (!CanJoinRoom(user.UserInfo.MMR)) 
+            return false;
         
         ConnectedUsers.Add(user);
+        await SendToClients(new ServerAction(ServerAction.ActionType.UpdateConnectedUserCount, new JObject
+        {
+            {"userCount", ConnectedUsers.Count}
+        }));
+        
         return true;
     }
     
-    public bool CanStartMatch => ConnectedUsers.Count % 2 == 0 && ConnectedUsers.Count > 0 && !MatchesInProgress;
+    private bool CanStartMatch => ConnectedUsers.Count % 2 == 0 && ConnectedUsers.Count > 0 && !MatchesInProgress && _didMatchTimerRunOut;
 
-    public async Task StartMatches()
+    private async Task StartMatches()
     {
         if (MatchesInProgress) return;
-
-        var usersInDivision = ConnectedUsers.ToArray();
+        if (!CanStartMatch) return;
 
         var startingTime = DateTime.UtcNow.Add(new TimeSpan(0, 0, 0, 5));
 
@@ -44,11 +62,11 @@ public class MatchLobby
             {"startTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
         });
 
-        await SendToClients(startingMatchServerAction, usersInDivision);
+        await SendToClients(startingMatchServerAction);
         
         await Task.Delay((int) startingTime.Subtract(DateTime.UtcNow).TotalMilliseconds);
 
-        CreateMatches();
+        InProgressMatches = CreateMatches().ToList();
     }
 
     private Match[] CreateMatches()
@@ -65,16 +83,48 @@ public class MatchLobby
 
             var randomUserTwo = users[random.Next(0, users.Count + 1)];
             users.Remove(randomUserTwo);
-            
-            matches.Add(new Match(randomUserOne, randomUserTwo, Division));
+
+            var match = new Match(randomUserOne, randomUserTwo, Division);
+            match.MatchEnded += OnMatchEnded;
+            matches.Add(match);
         }
 
         return matches.ToArray();
     }
 
-    private async Task SendToClients(ServerAction action, ConnectedUser[] users)
+    private void OnMatchEnded(Match match)
     {
-        foreach (var client in ConnectedUsers)
+        match.MatchEnded -= OnMatchEnded;
+        InProgressMatches.Remove(match);
+
+        if (MatchesInProgress) 
+            return;
+        
+        _canStartNewMatchesTimer.Elapsed += OnCanStartNewMatches;
+    }
+
+    private async void OnCanStartNewMatches(object? sender, ElapsedEventArgs _)
+    {
+        try
+        {
+            _didMatchTimerRunOut = true;
+
+            if (!CanStartMatch) 
+                return;
+
+            await StartMatches();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+
+    private async Task SendToClients(ServerAction action)
+    {
+        var users = ConnectedUsers;
+        
+        foreach (var client in users)
             await client.SendServerAction(action);
     }
 }

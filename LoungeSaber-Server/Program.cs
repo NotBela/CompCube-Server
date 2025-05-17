@@ -1,3 +1,4 @@
+using LoungeSaber_Server.Models.Networking;
 using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server
@@ -10,6 +11,7 @@ namespace LoungeSaber_Server
             {
                 UserData.Instance.Start();
                 MapData.Instance.Start();
+                MatchRoomDirector.Start();
                 Api.Api.Start();
             }
             catch (Exception e)

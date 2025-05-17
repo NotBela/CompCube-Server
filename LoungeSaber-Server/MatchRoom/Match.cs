@@ -16,7 +16,7 @@ public class Match
 
     private readonly List<VotingMap> mapVotes = [];
 
-    public event Action? MatchEnded;
+    public event Action<Match>? MatchEnded;
 
     private (User user, int score)? firstScorePosted = null;
     
@@ -99,7 +99,7 @@ public class Match
         {
             {"reason", reason}
         }));
-        MatchEnded?.Invoke();
+        MatchEnded?.Invoke(this);
     }
 
     private async Task EndVoting(VotingMap selectedMapDifficulty)
@@ -109,7 +109,7 @@ public class Match
         await SendActionToBothUsers(new ServerAction(ServerAction.ActionType.StartMatch, new JObject
         {
             {"selectedMap", JToken.FromObject(selectedMapDifficulty)},
-            {"startingTime", startingTime.ToString(CultureInfo.InvariantCulture)}
+            {"startingTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
         }));
         
         UserOne.OnUserScorePosted += OnUserScorePosted;
@@ -146,7 +146,7 @@ public class Match
         
             await first.SendServerAction(resultsServerAction);
         
-            MatchEnded?.Invoke();
+            MatchEnded?.Invoke(this);
         }
         catch (Exception e)
         {
