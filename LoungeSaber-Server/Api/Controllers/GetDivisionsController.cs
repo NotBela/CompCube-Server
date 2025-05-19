@@ -1,5 +1,5 @@
 ﻿using LoungeSaber_Server.MatchRoom;
-using LoungeSaber_Server.SkillDivision;
+using LoungeSaber_Server.Models.Divisions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoungeSaber_Server.Api.Controllers;
