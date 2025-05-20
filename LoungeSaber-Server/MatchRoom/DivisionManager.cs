@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
-using LoungeSaber_Server.SkillDivision;
-using Color = LoungeSaber_Server.SkillDivision.Color;
+using LoungeSaber_Server.Models.Divisions;
+using Color = LoungeSaber_Server.Models.Divisions.Color;
 
 namespace LoungeSaber_Server.MatchRoom;
 

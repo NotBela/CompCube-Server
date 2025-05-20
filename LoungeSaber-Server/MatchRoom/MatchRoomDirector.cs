@@ -3,11 +3,10 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using LoungeSaber_Server.MatchRoom;
-using LoungeSaber_Server.SkillDivision;
+using LoungeSaber_Server.Models.Networking;
 using LoungeSaber_Server.SQL;
 
-namespace LoungeSaber_Server.Models.Networking;
+namespace LoungeSaber_Server.MatchRoom;
 
 public static class MatchRoomDirector
 {

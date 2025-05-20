@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
 using System.Timers;
 using LoungeSaber_Server.Models;
+using LoungeSaber_Server.Models.Divisions;
 using LoungeSaber_Server.Models.Networking;
-using LoungeSaber_Server.SkillDivision;
 using Newtonsoft.Json.Linq;
 using Timer = System.Timers.Timer;
 

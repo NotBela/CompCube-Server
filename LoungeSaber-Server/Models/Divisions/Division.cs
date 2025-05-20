@@ -1,10 +1,8 @@
-﻿using System.Drawing;
-using LoungeSaber_Server.Models;
-using LoungeSaber_Server.Models.Maps;
+﻿using LoungeSaber_Server.Models.Maps;
 using LoungeSaber_Server.SQL;
 using Newtonsoft.Json;
 
-namespace LoungeSaber_Server.SkillDivision;
+namespace LoungeSaber_Server.Models.Divisions;
 
 public class Division
 {

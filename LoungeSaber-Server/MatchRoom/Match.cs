@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
 using LoungeSaber_Server.Models;
+using LoungeSaber_Server.Models.Divisions;
 using LoungeSaber_Server.Models.Maps;
 using LoungeSaber_Server.Models.Networking;
-using LoungeSaber_Server.SkillDivision;
 using Newtonsoft.Json.Linq;
 
 namespace LoungeSaber_Server.MatchRoom;
