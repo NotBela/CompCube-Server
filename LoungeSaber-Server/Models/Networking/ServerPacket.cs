@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace LoungeSaber_Server.Models.Networking;
 
-public class ServerAction(ServerAction.ActionType actionType, JObject data)
+public class ServerPacket(ServerPacket.ActionType actionType, JObject data)
 {
     public JObject Data { get; set; } = data;
     public ActionType Type { get; set; } = actionType;

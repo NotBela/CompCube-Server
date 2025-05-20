@@ -47,7 +47,7 @@ public class Match
     {
         var votingOptions = Division.GetRandomMaps(3);
         
-        var matchCreatedAction = new ServerAction(ServerAction.ActionType.CreateMatch, new JObject
+        var matchCreatedAction = new ServerPacket(ServerPacket.ActionType.CreateMatch, new JObject
         {
             {"opponent", JToken.FromObject(UserTwo.UserInfo) },
             {"votingOptions", JArray.FromObject(votingOptions) }
@@ -73,7 +73,7 @@ public class Match
 
             var nonVotingUser = votingUser.UserInfo.ID == UserOne.UserInfo.ID ? UserTwo : UserOne;
 
-            await nonVotingUser.SendServerAction(new ServerAction(ServerAction.ActionType.OpponentVoted, new JObject
+            await nonVotingUser.SendServerAction(new ServerPacket(ServerPacket.ActionType.OpponentVoted, new JObject
             {
                 {"opponentVote", JToken.FromObject(mapDifficultyVote)}
             }));
@@ -95,7 +95,7 @@ public class Match
 
     private async Task EndMatch(string reason)
     {
-        await SendActionToBothUsers(new ServerAction(ServerAction.ActionType.MatchEnded, new JObject
+        await SendActionToBothUsers(new ServerPacket(ServerPacket.ActionType.MatchEnded, new JObject
         {
             {"reason", reason}
         }));
@@ -106,7 +106,7 @@ public class Match
     {
         var startingTime = DateTime.UtcNow.AddSeconds(20);
         
-        await SendActionToBothUsers(new ServerAction(ServerAction.ActionType.StartMatch, new JObject
+        await SendActionToBothUsers(new ServerPacket(ServerPacket.ActionType.StartMatch, new JObject
         {
             {"selectedMap", JToken.FromObject(selectedMapDifficulty)},
             {"startingTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
@@ -134,7 +134,7 @@ public class Match
 
             var mmrChange = CalculateMMRChange(Math.Abs(firstScorePosted!.Value.score - score));
 
-            var resultsServerAction = new ServerAction(ServerAction.ActionType.Results, new JObject
+            var resultsServerAction = new ServerPacket(ServerPacket.ActionType.Results, new JObject
             {
                 {"opponentScore", firstScorePosted!.Value.score},
                 {"mmrChange", mmrChange}
@@ -161,9 +161,9 @@ public class Match
         return 0;
     }
 
-    private async Task SendActionToBothUsers(ServerAction serverAction)
+    private async Task SendActionToBothUsers(ServerPacket serverPacket)
     {
-        await UserOne.SendServerAction(serverAction);
-        await UserTwo.SendServerAction(serverAction);
+        await UserOne.SendServerAction(serverPacket);
+        await UserTwo.SendServerAction(serverPacket);
     }
 }

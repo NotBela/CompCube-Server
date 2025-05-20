@@ -1,5 +1,7 @@
 ﻿using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using LoungeSaber_Server.MatchRoom;
 using LoungeSaber_Server.SkillDivision;
@@ -9,7 +11,8 @@ namespace LoungeSaber_Server.Models.Networking;
 
 public static class MatchRoomDirector
 {
-    private static readonly TcpListener Listener = new(IPAddress.Parse("127.0.0.1"), 8008);
+    //TODO: change listener ip when not developing
+    private static readonly TcpListener Listener = new(IPAddress.Loopback, 8008);
 
     private static readonly Thread listenForClientsThread = new(ListenForClients);
     
@@ -29,8 +32,9 @@ public static class MatchRoomDirector
         {
             while (IsStarted)
             {
-                var client = Listener.AcceptTcpClient();
-            
+                var client = await Listener.AcceptTcpClientAsync();
+                Console.WriteLine("yep thats a client right there");
+                
                 try
                 {
                     var buffer = new byte[1024];
@@ -38,12 +42,13 @@ public static class MatchRoomDirector
                     var streamLength = client.GetStream().Read(buffer, 0, buffer.Length);
                     buffer = buffer[..streamLength];
                 
-                    var roomRequest = UserAction.Parse(Encoding.UTF8.GetString(buffer));
+                    var roomRequest = UserPacket.Parse(Encoding.UTF8.GetString(buffer));
 
-                    if (roomRequest.Type != UserAction.ActionType.Join ||
+                    if (roomRequest.Type != UserPacket.ActionType.Join ||
                         !roomRequest.JsonData.TryGetValue("divisionName", out var divisionName) ||
                         !DivisionManager.TryGetDivisionFromName(divisionName.ToObject<string>()!, out var division) || 
-                        !roomRequest.JsonData.TryGetValue("userId", out var userId))
+                        !roomRequest.JsonData.TryGetValue("userId", out var userId) || 
+                        !roomRequest.JsonData.TryGetValue("userName", out var userName))
                     {
                         client.Close();
                         continue;
@@ -58,7 +63,7 @@ public static class MatchRoomDirector
                         continue;
                     }
 
-                    if (!await division?.DivisionLobby.JoinRoom(new ConnectedUser(user, client))!)
+                    if (!await division?.DivisionLobby.JoinRoom(new ConnectedUser(user, client, userName.ToObject<string>()!))!)
                         continue;
                 
                     client.Close();

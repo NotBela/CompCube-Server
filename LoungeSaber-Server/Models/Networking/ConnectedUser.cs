@@ -9,6 +9,9 @@ namespace LoungeSaber_Server.Models.Networking;
 public class ConnectedUser
 {
     public readonly User UserInfo;
+
+    public readonly string UserName;
+    
     private readonly TcpClient _client;
 
     public bool IsInMatch { get; private set; } = false;
@@ -18,10 +21,12 @@ public class ConnectedUser
     public event Action<User, int>? OnUserScorePosted;
     public event Action<User>? OnUserLeftGame;
 
-    public ConnectedUser(User user, TcpClient client)
+    public ConnectedUser(User user, TcpClient client, string userName)
     {
         UserInfo = user;
         _client = client;
+
+        UserName = userName;
 
         var clientStreamReaderThread = new Thread(GetClientActionFromStream);
         clientStreamReaderThread.Start();
@@ -37,17 +42,17 @@ public class ConnectedUser
             buffer = buffer[..bufferLength];
 
             var json = Encoding.UTF8.GetString(buffer);
-            var userAction = UserAction.Parse(json);
+            var userAction = UserPacket.Parse(json);
 
             switch (userAction.Type)
             {
-                case UserAction.ActionType.VoteOnMap:
+                case UserPacket.ActionType.VoteOnMap:
                     if (!userAction.JsonData.TryGetValue("vote", out var voteToken))
                         throw new Exception("Could not parse vote from client request!");
                     
                     OnUserVoteRecieved?.Invoke(UserInfo, voteToken.ToObject<VotingMap>()!);
                     break;
-                case UserAction.ActionType.PostScore:
+                case UserPacket.ActionType.PostScore:
                     if (!userAction.JsonData.TryGetValue("score", out var score))
                     {
                         _client.Close();
@@ -56,13 +61,13 @@ public class ConnectedUser
                         
                     OnUserScorePosted?.Invoke(UserInfo, score.ToObject<int>());
                     break;
-                case UserAction.ActionType.Leave:
+                case UserPacket.ActionType.Leave:
                     OnUserLeftGame?.Invoke(userAction.User);
                     break;
             }
         }
     }
 
-    public async Task SendServerAction(ServerAction action) =>
-        await _client.GetStream().WriteAsync(Encoding.UTF8.GetBytes(action.Serialize()));
+    public async Task SendServerAction(ServerPacket packet) =>
+        await _client.GetStream().WriteAsync(Encoding.UTF8.GetBytes(packet.Serialize()));
 }

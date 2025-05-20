@@ -40,7 +40,7 @@ public class MatchLobby
             return false;
         
         ConnectedUsers.Add(user);
-        await SendToClients(new ServerAction(ServerAction.ActionType.UpdateConnectedUserCount, new JObject
+        await SendToClients(new ServerPacket(ServerPacket.ActionType.UpdateConnectedUserCount, new JObject
         {
             {"userCount", ConnectedUsers.Count}
         }));
@@ -57,7 +57,7 @@ public class MatchLobby
 
         var startingTime = DateTime.UtcNow.Add(new TimeSpan(0, 0, 0, 5));
 
-        var startingMatchServerAction = new ServerAction(ServerAction.ActionType.StartWarning, new JObject()
+        var startingMatchServerAction = new ServerPacket(ServerPacket.ActionType.StartWarning, new JObject()
         {
             {"startTime", startingTime.ToString("o", CultureInfo.InvariantCulture)}
         });
@@ -120,11 +120,11 @@ public class MatchLobby
         }
     }
 
-    private async Task SendToClients(ServerAction action)
+    private async Task SendToClients(ServerPacket packet)
     {
         var users = ConnectedUsers;
         
         foreach (var client in users)
-            await client.SendServerAction(action);
+            await client.SendServerAction(packet);
     }
 }

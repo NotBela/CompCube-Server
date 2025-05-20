@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace LoungeSaber_Server.Models.Networking;
 
-public class UserAction
+public class UserPacket
 {
     public readonly ActionType Type;
     public readonly JObject JsonData;
@@ -21,16 +21,16 @@ public class UserAction
         }
     }
     
-    private UserAction(ActionType actionType, string data)
+    private UserPacket(ActionType actionType, string data)
     {
         Type = actionType;
 
         JsonData = JsonConvert.DeserializeObject<JObject>(data)!;
     }
 
-    public static UserAction Parse(string json)
+    public static UserPacket Parse(string json)
     {
-        var deserialized = JsonConvert.DeserializeObject<UserAction>(json);
+        var deserialized = JsonConvert.DeserializeObject<UserPacket>(json);
         
         if (deserialized == null) 
             throw new Exception("User action could not be deserialized");
