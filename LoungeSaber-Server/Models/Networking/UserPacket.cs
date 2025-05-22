@@ -8,6 +8,8 @@ public class UserPacket
 {
     [JsonProperty("PacketType")]
     public readonly ActionType Type;
+    
+    [JsonProperty("JsonData")]
     public readonly JObject JsonData;
 
     [JsonIgnore]

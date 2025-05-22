@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using LoungeSaber_Server.Models.Networking;
 using LoungeSaber_Server.SQL;
+using Newtonsoft.Json.Linq;
 
 namespace LoungeSaber_Server.MatchRoom;
 
@@ -51,7 +52,7 @@ public static class MatchRoomDirector
                         !roomRequest.JsonData.TryGetValue("userId", out var userId) || 
                         !roomRequest.JsonData.TryGetValue("userName", out var userName))
                     {
-                        client.Close();
+                        await DisconnectClient(client, "InvalidJoinPacket");
                         continue;
                     }
 
@@ -60,19 +61,20 @@ public static class MatchRoomDirector
 
                     if (user == null)
                     {
-                        client.Close();
+                        await DisconnectClient(client, "CouldNotFindUser");
                         continue;
                     }
 
-                    if (!await division?.DivisionLobby.JoinRoom(new ConnectedUser(user, client, userName.ToObject<string>()!))!)
-                        continue;
-                
-                    client.Close();
+                    if (!await division?.DivisionLobby.JoinRoom(new ConnectedUser(user, client,
+                            userName.ToObject<string>()!))!)
+                    {
+                        await DisconnectClient(client, "CannotJoinRoom");
+                    }
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
-                    client.Close();
+                    await DisconnectClient(client, "UnhandledServerException");
                 }
             }
         }
@@ -80,6 +82,19 @@ public static class MatchRoomDirector
         {
             Console.WriteLine(e);
         }
+    }
+
+    private static async Task DisconnectClient(TcpClient client, string reason)
+    {
+        var packet = new ServerPacket(ServerPacket.ActionType.Disconnect, new JObject
+        {
+            {"reason", reason}
+        });
+
+        var bytes = Encoding.UTF8.GetBytes(packet.Serialize());
+        
+        await client.Client.SendAsync(new ArraySegment<byte>(bytes));
+        client.Close();
     }
 
     public static void Stop()

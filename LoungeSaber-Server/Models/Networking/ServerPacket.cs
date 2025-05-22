@@ -18,6 +18,7 @@ public class ServerPacket(ServerPacket.ActionType actionType, JObject data)
         MatchEnded,
         StartWarning,
         Results,
-        UpdateConnectedUserCount
+        UpdateConnectedUserCount,
+        Disconnect
     }
 }

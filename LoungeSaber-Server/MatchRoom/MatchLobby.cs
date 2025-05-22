@@ -38,6 +38,8 @@ public class MatchLobby
     {
         if (!CanJoinRoom(user.UserInfo.MMR)) 
             return false;
+
+        if (ConnectedUsers.Any(i => i.UserInfo.ID == user.UserInfo.ID)) return false;
         
         ConnectedUsers.Add(user);
         await SendToClients(new ServerPacket(ServerPacket.ActionType.UpdateConnectedUserCount, new JObject
