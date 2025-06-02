@@ -1,5 +1,3 @@
-using LoungeSaber_Server.MatchRoom;
-using LoungeSaber_Server.Models.Networking;
 using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server
@@ -12,7 +10,6 @@ namespace LoungeSaber_Server
             {
                 UserData.Instance.Start();
                 MapData.Instance.Start();
-                MatchRoomDirector.Start();
                 Api.Api.Start();
             }
             catch (Exception e)
@@ -24,13 +21,6 @@ namespace LoungeSaber_Server
                 UserData.Instance.Stop();
                 MapData.Instance.Stop();
             }
-        }
-
-        public static void LogError(string text)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine(text);
-            Console.ResetColor();
         }
     }
 }

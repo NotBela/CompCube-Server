@@ -27,7 +27,7 @@ public abstract class Database
         Directory.CreateDirectory(DataFolderPath);
         
         _connection.Open();
-        CreateInitialTable();
+        CreateInitialTables();
     }
     
     public void Stop()
@@ -38,5 +38,5 @@ public abstract class Database
         _connection.Close();
     }
 
-    protected abstract void CreateInitialTable();
+    protected abstract void CreateInitialTables();
 }
