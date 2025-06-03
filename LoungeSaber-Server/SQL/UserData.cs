@@ -10,6 +10,7 @@ public class UserData : Database
     {
         CreateMmrTable();
         CreateDiscordIdTable();
+        CreateUserNameTable();
     }
 
     private void CreateMmrTable()
@@ -24,6 +25,13 @@ public class UserData : Database
         var dbCommand = _connection.CreateCommand();
         dbCommand.CommandText =
             "CREATE TABLE IF NOT EXISTS discord (id TEXT PRIMARY KEY NOT NULL, discordId TEXT NOT NULL)";
+        dbCommand.ExecuteNonQuery();
+    }
+
+    private void CreateUserNameTable()
+    {
+        var dbCommand = _connection.CreateCommand();
+        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS username (id TEXT NOT NULL PRIMARY KEY, username TEXT NOT NULL)";
         dbCommand.ExecuteNonQuery();
     }
 }

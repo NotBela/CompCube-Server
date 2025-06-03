@@ -8,13 +8,13 @@ public class MapData : Database
     
     protected override void CreateInitialTables()
     {
-        var createDBCommand = _connection.CreateCommand();
-        createDBCommand.CommandText = "CREATE TABLE IF NOT EXISTS mapData ( " + 
+        var createDbCommand = _connection.CreateCommand();
+        createDbCommand.CommandText = "CREATE TABLE IF NOT EXISTS mapData ( " + 
                                       "hash TEXT NOT NULL, " + 
                                       "difficulty TEXT NOT NULL, " + 
                                       "characteristic TEXT NOT NULL, " + 
                                       "category TEXT NOT NULL " +
                                       ");";
-        createDBCommand.ExecuteNonQuery();
+        createDbCommand.ExecuteNonQuery();
     }
 }
