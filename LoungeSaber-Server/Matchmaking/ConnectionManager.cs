@@ -1,8 +1,11 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
+using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Packets;
 using LoungeSaber_Server.Models.Packets.UserPackets;
+using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server.Matchmaking;
 
@@ -50,9 +53,10 @@ public static class ConnectionManager
                     Array.Resize(ref buffer, bufferSize);
 
                     var joinPacket = UserPacket.Deserialize(Encoding.UTF8.GetString(buffer)) as JoinPacket;
-
-                    var connectedClient = joinPacket!.UserId;
                     
+                    var connectedClient = new ConnectedClient(client, UserData.Instance.UpdateUserLoginData(joinPacket!.UserId, joinPacket.UserName));
+
+
                 }
                 catch (Exception e)
                 {

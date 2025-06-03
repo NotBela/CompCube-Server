@@ -14,34 +14,14 @@ public class UserInfo
     public int Mmr { get; private set; }
     
     [JsonProperty("badge")]
-    public Badge Badge { get; private set; }
+    public Badge.Badge? Badge { get; private set; }
     
     [JsonConstructor]
-    public UserInfo(string username, string userId, int mmr, Badge badge)
+    public UserInfo(string username, string userId, int mmr, Badge.Badge? badge)
     {
         Username = username;
         UserId = userId;
         Mmr = mmr;
         Badge = badge;
-    }
-}
-
-public class Badge
-{
-    [JsonProperty("badgeName")]
-    public string Name { get; private set; }
-    
-    [JsonProperty("badgeColor")]
-    public string ColorCode { get; private set; }
-    
-    [JsonProperty("badgeBold")]
-    public bool Bold { get; private set; }
-
-    [JsonConstructor]
-    public Badge(string name, string colorCode, bool bold)
-    {
-        Name = name;
-        ColorCode = colorCode;
-        Bold = bold;
     }
 }
