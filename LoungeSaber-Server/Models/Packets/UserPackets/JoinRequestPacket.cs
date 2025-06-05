@@ -2,11 +2,13 @@
 
 namespace LoungeSaber_Server.Models.Packets.UserPackets;
 
-public class JoinPacket : UserPacket
+public class JoinRequestPacket : UserPacket
 {
     [JsonProperty("username")]
     public string UserName { get; private set; }
     
     [JsonProperty("userId")]
     public string UserId { get; private set; }
+
+    public override UserPacketTypes PacketType =>  UserPacketTypes.JoinRequest;
 }

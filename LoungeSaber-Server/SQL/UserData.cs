@@ -13,6 +13,7 @@ public class UserData : Database
     {
         var command = _connection.CreateCommand();
         command.CommandText = $"SELECT * FROM userData WHERE userData.id = @id LIMIT 1";
+        command.Parameters.AddWithValue("id", userId);
         using var reader = command.ExecuteReader();
         
         while (reader.Read())
@@ -22,37 +23,56 @@ public class UserData : Database
             
             var mmr = reader.GetInt32(1);
             var userName = reader.GetString(2);
-            var badge = GetBadgeForUser(userId);
+            var badge = GetBadge(reader.GetString(3));
             return new UserInfo(userName, userId, mmr, badge);
         }
 
         return null;
     }
 
-    public Badge? GetBadgeForUser(string userId)
+    public Badge? GetBadge(string? badgeName)
     {
-        var command = _connection.CreateCommand();
-        command.CommandText = $"SELECT badge FROM badges WHERE id = @id LIMIT 1";
-        command.Parameters.AddWithValue("id", userId);
-        if (command.ExecuteScalar() == null) 
-            return null;
+        if (badgeName == null) return null;
         
-        // make badge manager and badge config system
+        var command = _connection.CreateCommand();
+        command.CommandText = "SELECT * FROM badges WHERE badgeName = @badgeName LIMIT 1";
+        command.Parameters.AddWithValue("@badgeName", badgeName);
+        using var reader = command.ExecuteReader();
+
+        while (reader.Read())
+        {
+            if (reader.FieldCount == 0) return null;
+            
+            var name = reader.GetString(0);
+            var color = reader.GetString(1);
+            var bold = reader.GetBoolean(2);
+            
+            return new Badge(name, color, bold);
+        }
+        
         return null;
     }
     
     public UserInfo UpdateUserLoginData(string userId, string userName)
     {
-        // also make sure to update last used username!
-        
         var user = GetUser(userId);
-        if (user != null) return user;
+        if (user != null)
+        {
+            var updateUserNameCommand = _connection.CreateCommand();
+            updateUserNameCommand.CommandText = "UPDATE userData SET username = @userName WHERE userData.id = @userId";
+            updateUserNameCommand.Parameters.AddWithValue("userName", userName);
+            updateUserNameCommand.Parameters.AddWithValue("userId", userId);
+            updateUserNameCommand.ExecuteNonQuery();
+            
+            // avoid fetching from db twice in a row
+            return new UserInfo(userName, userId, user.Mmr, user.Badge);
+        }
         
-        var addToMmrTable = _connection.CreateCommand();
-        addToMmrTable.CommandText = "INSERT INTO userData VALUES (@userId, 1000, @userName)";
-        addToMmrTable.Parameters.AddWithValue("userId", userId);
-        addToMmrTable.Parameters.AddWithValue("userName", userName);
-        addToMmrTable.ExecuteNonQuery();
+        var addToUserDataCommand = _connection.CreateCommand();
+        addToUserDataCommand.CommandText = "INSERT INTO userData VALUES (@userId, 1000, @userName, null)";
+        addToUserDataCommand.Parameters.AddWithValue("userId", userId);
+        addToUserDataCommand.Parameters.AddWithValue("userName", userName);
+        addToUserDataCommand.ExecuteNonQuery();
 
         return new UserInfo(userName, userId, 1000, null);
     }
@@ -74,14 +94,14 @@ public class UserData : Database
     private void CreateBadgeTable()
     {
         var command = _connection.CreateCommand();
-        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (id TEXT NOT NULL PRIMARY KEY, badge TEXT)";
+        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL PRIMARY KEY, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
         command.ExecuteNonQuery();
     }
     
     private void CreateUserDataTable()
     {
         var dbCommand = _connection.CreateCommand();
-        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL)";
+        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT)";
         dbCommand.ExecuteNonQuery();
     }
 }

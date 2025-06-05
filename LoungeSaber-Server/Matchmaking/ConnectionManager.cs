@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Packets;
+using LoungeSaber_Server.Models.Packets.ServerPackets;
 using LoungeSaber_Server.Models.Packets.UserPackets;
 using LoungeSaber_Server.SQL;
 
@@ -11,57 +11,51 @@ namespace LoungeSaber_Server.Matchmaking;
 
 public static class ConnectionManager
 {
-    private static TcpListener _listener = new(IPAddress.Loopback, 8008);
-    
-    private static Thread _listenerThread;
+    //TODO: change listener ip when not developing
+    private static readonly TcpListener Listener = new(IPAddress.Loopback, 8008);
 
-    private static bool _shouldListen = false;
-
-    static ConnectionManager()
-    {
-        _listenerThread = new Thread(ListenForClients);
-    }
+    private static readonly Thread listenForClientsThread = new(ListenForClients);
     
+    private static bool IsStarted = false;
+
     public static void Start()
     {
-        if (_shouldListen) 
-            return;
+        Listener.Start();
+        IsStarted = true;
         
-        _listenerThread = new Thread(ListenForClients);
-        
-        _listener.Start();
-        
-        _shouldListen = true;
-        _listenerThread.Start();
+        listenForClientsThread.Start();
     }
 
     private static async void ListenForClients()
     {
         try
         {
-            while (_shouldListen)
+            while (IsStarted)
             {
-                var client = await _listener.AcceptTcpClientAsync();
+                var client = Listener.AcceptTcpClient();
                 
                 try
                 {
-                    var stream = client.GetStream();
+                    var buffer = new byte[1024];
 
-                    var buffer = new byte[client.ReceiveBufferSize];
+                    var streamLength = client.GetStream().Read(buffer, 0, buffer.Length);
+                    buffer = buffer[..streamLength];
 
-                    var bufferSize = await stream.ReadAsync(buffer);
-                    Array.Resize(ref buffer, bufferSize);
+                    var json = Encoding.UTF8.GetString(buffer);
+                    Console.WriteLine(json);
 
-                    var joinPacket = UserPacket.Deserialize(Encoding.UTF8.GetString(buffer)) as JoinPacket;
+                    var packet = UserPacket.Deserialize(json) as JoinRequestPacket ?? throw new Exception("Could not deserialize packet!");
+
+                    var connectedClient = new ConnectedClient(client, UserData.Instance.UpdateUserLoginData(packet.UserId, packet.UserName));
+
+                    await connectedClient.SendPacket(new JoinedQueue());
                     
-                    var connectedClient = new ConnectedClient(client, UserData.Instance.UpdateUserLoginData(joinPacket!.UserId, joinPacket.UserName));
-
-
+                    Matchmaker.AddClientToPool(connectedClient);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
-                    client.Dispose();
+                    DisconnectClient(client, "UnhandledServerException");
                 }
             }
         }
@@ -69,5 +63,16 @@ public static class ConnectionManager
         {
             Console.WriteLine(e);
         }
+    }
+
+    private static void DisconnectClient(TcpClient client, string reason)
+    {
+        // TODO
+    }
+
+    public static void Stop()
+    {
+        IsStarted = false;
+        Listener.Stop();
     }
 }

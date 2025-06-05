@@ -1,3 +1,4 @@
+using LoungeSaber_Server.Matchmaking;
 using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server
@@ -10,17 +11,14 @@ namespace LoungeSaber_Server
             {
                 UserData.Instance.Start();
                 MapData.Instance.Start();
-                Api.Api.Start();
+                ConnectionManager.Start();
+                // Api.Api.Start();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
-            finally
-            {
-                UserData.Instance.Stop();
-                MapData.Instance.Stop();
-            }
+
         }
     }
 }
