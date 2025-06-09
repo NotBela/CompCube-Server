@@ -22,13 +22,13 @@ public abstract class ServerPacket : Packet
 
         return userPacketType switch
         {
-            ServerPacketTypes.JoinedQueue => JsonConvert.DeserializeObject<JoinedQueue>(json)!,
+            ServerPacketTypes.JoinResponse => JsonConvert.DeserializeObject<JoinResponse>(json)!,
             _ => throw new Exception("Could not get packet type!")
         };
     }
     
     public enum ServerPacketTypes
     {
-        JoinedQueue
+        JoinResponse
     }
 }

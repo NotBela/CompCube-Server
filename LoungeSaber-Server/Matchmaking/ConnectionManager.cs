@@ -48,7 +48,7 @@ public static class ConnectionManager
 
                     var connectedClient = new ConnectedClient(client, UserData.Instance.UpdateUserLoginData(packet.UserId, packet.UserName));
 
-                    await connectedClient.SendPacket(new JoinedQueue());
+                    await connectedClient.SendPacket(new JoinResponse(true, ""));
                     
                     Matchmaker.AddClientToPool(connectedClient);
                 }
