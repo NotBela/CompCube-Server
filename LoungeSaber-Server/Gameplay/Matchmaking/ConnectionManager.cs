@@ -7,7 +7,7 @@ using LoungeSaber_Server.Models.Packets.ServerPackets;
 using LoungeSaber_Server.Models.Packets.UserPackets;
 using LoungeSaber_Server.SQL;
 
-namespace LoungeSaber_Server.Matchmaking;
+namespace LoungeSaber_Server.Gameplay.Matchmaking;
 
 public static class ConnectionManager
 {
@@ -50,7 +50,7 @@ public static class ConnectionManager
 
                     await connectedClient.SendPacket(new JoinResponse(true, ""));
                     
-                    Matchmaker.AddClientToPool(connectedClient);
+                    Matchmaker.Instance.AddClientToPool(connectedClient);
                 }
                 catch (Exception e)
                 {

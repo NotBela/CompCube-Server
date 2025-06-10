@@ -1,4 +1,4 @@
-using LoungeSaber_Server.Matchmaking;
+using LoungeSaber_Server.Gameplay.Matchmaking;
 using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server
