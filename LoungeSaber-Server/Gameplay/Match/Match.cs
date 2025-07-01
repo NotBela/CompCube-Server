@@ -81,8 +81,8 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
 
             var mmrChange = GetMmrChange(winnerScoreAndClient.Item2, loserScoreAndClient.Item2);
             
-            await winnerScoreAndClient.Item2.SendPacket(new MatchResults(loserScoreAndClient.Item1, MatchResults.MatchWinner.You, mmrChange));
-            await loserScoreAndClient.Item2.SendPacket(new MatchResults(winnerScoreAndClient.Item1, MatchResults.MatchWinner.Opponent, mmrChange));
+            await winnerScoreAndClient.Item2.SendPacket(new MatchResults(loserScoreAndClient.Item1, winnerScoreAndClient.Item1, MatchResults.MatchWinner.You, mmrChange));
+            await loserScoreAndClient.Item2.SendPacket(new MatchResults(winnerScoreAndClient.Item1, loserScoreAndClient.Item1, MatchResults.MatchWinner.Opponent, mmrChange));
         }
         catch (Exception e)
         {

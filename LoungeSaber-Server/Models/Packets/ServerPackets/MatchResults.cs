@@ -9,6 +9,9 @@ public class MatchResults : ServerPacket
     
     [JsonProperty("opponentScore")]
     public readonly ScoreSubmissionPacket OpponentScore;
+        
+    [JsonProperty("yourScore")]
+    public readonly ScoreSubmissionPacket YourScore;
 
     [JsonProperty("winner")]
     public readonly MatchWinner Winner;
@@ -17,9 +20,10 @@ public class MatchResults : ServerPacket
     public readonly int MMRChange;
 
     [JsonConstructor]
-    public MatchResults(ScoreSubmissionPacket opponentScore, MatchWinner winner, int mmrChange)
+    public MatchResults(ScoreSubmissionPacket opponentScore, ScoreSubmissionPacket yourScore, MatchWinner winner, int mmrChange)
     {
         OpponentScore = opponentScore;
+        YourScore = yourScore;
         Winner = winner;
         MMRChange = mmrChange;
     }
