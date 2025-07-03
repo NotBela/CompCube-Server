@@ -1,5 +1,6 @@
 ﻿using LoungeSaber_Server.Models.Badge;
 using LoungeSaber_Server.Models.Client;
+using Microsoft.Data.Sqlite;
 
 namespace LoungeSaber_Server.SQL;
 
@@ -18,13 +19,8 @@ public class UserData : Database
         using var reader = command.ExecuteReader();
 
         while (reader.Read())
-        {
-            if (reader.FieldCount == 0) return null;
-            
-            var userId = reader.GetString(0);
-            
-            return GetUserById(userId);
-        }
+            return GetUserInfoFromReader(reader);
+        
         return null;
     }
 
@@ -33,29 +29,57 @@ public class UserData : Database
         var command = _connection.CreateCommand();
         command.CommandText = $"SELECT * FROM userData WHERE userData.id = @id LIMIT 1";
         command.Parameters.AddWithValue("id", userId);
+
         using var reader = command.ExecuteReader();
+
+        while (reader.Read()) 
+            return GetUserInfoFromReader(reader);
         
+        return null;
+    }
+
+    private UserInfo? GetUserInfoFromReader(SqliteDataReader reader)
+    {
+        if (reader.FieldCount == 0) 
+            return null;
+            
+        var userId = reader.GetString(0);
+        var mmr = reader.GetInt32(1);
+        var userName = reader.GetString(2);
+        Badge? badge = null;
+        string? discordId = null;
+
+        var rankCommand = _connection.CreateCommand();
+        rankCommand.CommandText = $"SELECT COUNT(*) FROM userData WHERE mmr > @mmrThreshold ORDER BY mmr";
+        rankCommand.Parameters.AddWithValue("mmrThreshold", mmr);
+        var rank = (long) (rankCommand.ExecuteScalar() ?? throw new Exception("Could not get user rank!")) + 1;
+
+        if (!reader.IsDBNull(3))
+            badge = GetBadge(reader.GetString(3));
+            
+        if (!reader.IsDBNull(4))
+            discordId = reader.GetString(4);
+            
+        return new UserInfo(userName, userId, mmr, badge, rank, discordId);
+    }
+
+    public List<UserInfo> GetAllUsers()
+    {
+        var command = _connection.CreateCommand();
+        command.CommandText = "SELECT * FROM userData ORDER BY mmr";
+        
+        var userList = new List<UserInfo>();
+        
+        using var reader = command.ExecuteReader();
+
         while (reader.Read())
         {
-            if (reader.FieldCount == 0) 
-                return null;
-            
-            var mmr = reader.GetInt32(1);
-            var userName = reader.GetString(2);
-            Badge? badge = null;
-
-            var rankCommand = _connection.CreateCommand();
-            rankCommand.CommandText = $"SELECT COUNT(*) FROM userData WHERE mmr > @mmrThreshold ORDER BY mmr";
-            rankCommand.Parameters.AddWithValue("mmrThreshold", mmr);
-            var rank = (long) (rankCommand.ExecuteScalar() ?? throw new Exception("Could not get user rank!")) + 1;
-
-            if (!reader.IsDBNull(3))
-                badge = GetBadge(reader.GetString(3));
-            
-            return new UserInfo(userName, userId, mmr, badge, rank);
+            var user = GetUserInfoFromReader(reader);
+            if (user == null) continue;
+            userList.Add(user);
         }
-
-        return null;
+        
+        return userList;
     }
 
     public UserInfo ApplyMmrChange(UserInfo user, int mmrChange)
@@ -108,7 +132,7 @@ public class UserData : Database
         }
         
         var addToUserDataCommand = _connection.CreateCommand();
-        addToUserDataCommand.CommandText = "INSERT INTO userData VALUES (@userId, 1000, @userName, null)";
+        addToUserDataCommand.CommandText = "INSERT INTO userData VALUES (@userId, 1000, @userName, null, null)";
         addToUserDataCommand.Parameters.AddWithValue("userId", userId);
         addToUserDataCommand.Parameters.AddWithValue("userName", userName);
         addToUserDataCommand.ExecuteNonQuery();
@@ -119,15 +143,7 @@ public class UserData : Database
     protected override void CreateInitialTables()
     {
         CreateUserDataTable();
-        CreateLinkedDiscordTable();
         CreateBadgeTable();
-    }
-
-    private void CreateLinkedDiscordTable()
-    {
-        var command = _connection.CreateCommand();
-        command.CommandText = "CREATE TABLE IF NOT EXISTS discord (id TEXT NOT NULL PRIMARY KEY, discordId TEXT NOT NULL UNIQUE )";
-        command.ExecuteNonQuery();
     }
 
     private void CreateBadgeTable()
@@ -140,7 +156,7 @@ public class UserData : Database
     private void CreateUserDataTable()
     {
         var dbCommand = _connection.CreateCommand();
-        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT)";
+        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT, discordID TEXT UNIQUE)";
         dbCommand.ExecuteNonQuery();
     }
 }

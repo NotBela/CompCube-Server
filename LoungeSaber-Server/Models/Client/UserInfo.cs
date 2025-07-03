@@ -19,13 +19,17 @@ public class UserInfo
     [JsonProperty("rank")]
     public long Rank { get; private set; }
     
+    [JsonProperty("discordId")]
+    public string? DiscordId { get; private set; }
+    
     [JsonConstructor]
-    public UserInfo(string username, string userId, int mmr, Badge.Badge? badge, long rank)
+    public UserInfo(string username, string userId, int mmr, Badge.Badge? badge, long rank, string? discordId)
     {
         Username = username;
         UserId = userId;
         Mmr = mmr;
         Badge = badge;
         Rank = rank;
+        DiscordId = discordId;
     }
 }
