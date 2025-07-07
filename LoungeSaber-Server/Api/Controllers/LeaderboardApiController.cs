@@ -9,7 +9,7 @@ public class LeaderboardApiController : ControllerBase
 {
     [HttpGet("api/leaderboard/range/")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<UserInfo[]> GetLeaderboardRange(int start, int range)
+    public UserInfo[] GetLeaderboardRange(int start, int range)
     {
         range = Math.Min(range, 10);
 
@@ -17,5 +17,20 @@ public class LeaderboardApiController : ControllerBase
         Array.Resize(ref users, Math.Min(users.Length, range));
 
         return users;
+    }
+
+    [HttpGet("/api/leaderboard/aroundUser/{userId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<UserInfo[]> GetAroundUser(string userId)
+    {
+        var users = UserData.Instance.GetAllUsers();
+
+        if (users.All(i => i?.UserId != userId))
+            return NotFound();
+        
+        var userIdx = users.FindIndex(i => i?.UserId == userId);
+        
+        return users.Slice(Math.Clamp(userIdx - 4, 0, users.Count), Math.Max(users.Count, users.Count)).ToArray();
     }
 }
