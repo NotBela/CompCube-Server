@@ -33,9 +33,12 @@ public class ConnectedClient
         {
             while (_listenToClient)
             {
-                if (!_client.Connected)
+                // if client disconnects
+                if (_client.Client.Poll(10, SelectMode.SelectRead))
                 {
                     _listenToClient = false;
+                    StopListeningToClient();
+                    OnDisconnected?.Invoke(this);
                     return;
                 }
                 
@@ -43,7 +46,8 @@ public class ConnectedClient
 
                 _client.GetStream().Flush();
                 
-                while (!_client.GetStream().DataAvailable);
+                if (!_client.GetStream().DataAvailable)
+                    continue;
                 
                 var bytesRead = _client.GetStream().Read(buffer, 0, buffer.Length);
                 Array.Resize(ref buffer, bytesRead);
