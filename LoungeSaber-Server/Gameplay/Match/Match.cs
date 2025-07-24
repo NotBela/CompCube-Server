@@ -23,7 +23,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
     public event Action<MatchResults?>? OnMatchEnded;
     public event Action<ConnectedClient, int, string>? OnPlayerPunished;
 
-    public const int MmrLossOnDisconnect = 50;
+    private const int MmrLossOnDisconnect = 50;
 
     public async Task StartMatch()
     {

@@ -35,9 +35,7 @@ public class ConnectedClient : IDisposable
             {
                 if (!IsConnectionAlive())
                 {
-                    _listenToClient = false;
-                    StopListeningToClient();
-                    OnDisconnected?.Invoke(this);
+                    DisconnectClient();
                     Console.WriteLine("user disconnected!");
                     return;
                 }
@@ -64,9 +62,14 @@ public class ConnectedClient : IDisposable
         catch (Exception e)
         {
             Console.WriteLine(e);
-            StopListeningToClient();
-            OnDisconnected?.Invoke(this);
+            DisconnectClient();
         }
+    }
+
+    private void DisconnectClient()
+    {
+        StopListeningToClient();
+        OnDisconnected?.Invoke(this);
     }
 
     private bool IsConnectionAlive()
@@ -94,7 +97,7 @@ public class ConnectedClient : IDisposable
                 OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new Exception("Could not parse score submission packet!"), this);
                 break;
             default:
-                StopListeningToClient();
+                DisconnectClient();
                 throw new Exception("Unknown packet type!");
         }
     }
@@ -113,6 +116,6 @@ public class ConnectedClient : IDisposable
 
     public void Dispose()
     {
-        StopListeningToClient();
+        DisconnectClient();
     }
 }
