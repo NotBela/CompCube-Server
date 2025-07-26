@@ -10,8 +10,8 @@ namespace LoungeSaber_Server.Gameplay.Match;
 
 public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
 {
-    private readonly ConnectedClient PlayerOne = playerOne;
-    private readonly ConnectedClient PlayerTwo = playerTwo;
+    public readonly ConnectedClient PlayerOne = playerOne;
+    public readonly ConnectedClient PlayerTwo = playerTwo;
 
     private readonly List<(VotingMap, ConnectedClient)> _userVotes = [];
 
@@ -20,7 +20,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
     
     private readonly VotingMap[] _mapSelections = GetRandomMapSelections(3);
     
-    public event Action<MatchResults?>? OnMatchEnded;
+    public event Action<MatchResults?, Match>? OnMatchEnded;
     public event Action<ConnectedClient, int, string>? OnPlayerPunished;
 
     private const int MmrLossOnDisconnect = 50;
@@ -64,7 +64,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
         
         PlayerOne.StopListeningToClient();
         PlayerTwo.StopListeningToClient();
-        OnMatchEnded?.Invoke(results);
+        OnMatchEnded?.Invoke(results, this);
     }
 
     private async void OnUserVoted(VotePacket vote, ConnectedClient client)

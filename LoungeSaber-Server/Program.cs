@@ -6,7 +6,7 @@ namespace LoungeSaber_Server
 {
     public class Program
     {
-        public const bool Debug = true;
+        public const bool Debug = false;
         
         public static void Main(string[] args)
         {
