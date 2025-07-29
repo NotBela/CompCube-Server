@@ -33,10 +33,7 @@ public class UserData : Database
         using var reader = command.ExecuteReader();
 
         while (reader.Read())
-        {
-            Console.WriteLine(reader.HasRows);
             return GetUserInfoFromReader(reader);
-        }
         
         return null;
     }
