@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.SQL;
 using NetCord;
 using NetCord.Rest;
@@ -26,22 +27,32 @@ public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
     }
 
     [SlashCommand("profile", "View the profile of yourself or another user")]
-    public void Profile(User? user = null)
+    public void ProfileByUser(User? user = null, string? id = null)
     {
-        InteractionMessageProperties message = "";
-        var embed = new EmbedProperties();
-        message.Embeds = [embed];
+        if (id != null)
+        {
+            Context.Interaction.SendResponseAsync(InteractionCallback.Message(GetUserProfileMessage(UserData.Instance.GetUserById(id))));
+            return;
+        }
         
         if (user == null)
             user = Context.User;
         
-        var userInfo = UserData.Instance.GetUserByDiscordId(user.Id.ToString());
+        var userProfile = UserData.Instance.GetUserByDiscordId(user.Id.ToString());
+        
+        Context.Interaction.SendResponseAsync(InteractionCallback.Message(GetUserProfileMessage(userProfile)));
+    }
+
+    private InteractionMessageProperties GetUserProfileMessage(UserInfo? userInfo)
+    {
+        InteractionMessageProperties message = "";
+        var embed = new EmbedProperties();
+        message.Embeds = [embed];
 
         if (userInfo == null)
         {
             embed.Description = "This user is not linked to a LoungeSaber profile.";
-            Context.Interaction.SendResponseAsync(InteractionCallback.Message(message));
-            return;
+            return message;
         }
 
         embed.Title = userInfo.Username;
@@ -65,7 +76,7 @@ public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
             }
         ];
 
-        Context.Interaction.SendResponseAsync(InteractionCallback.Message(message));
+        return message;
     }
 
     private Color ParseColor(string colorCode)
