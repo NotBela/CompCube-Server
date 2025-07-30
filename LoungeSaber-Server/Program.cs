@@ -15,7 +15,7 @@ namespace LoungeSaber_Server
                 UserData.Instance.Start();
                 MapData.Instance.Start();
                 ConnectionManager.Start();
-                DiscordBot.RunDiscordBot();
+                DiscordBot.Start();
                 Api.Api.Start();
             }
             catch (Exception e)
