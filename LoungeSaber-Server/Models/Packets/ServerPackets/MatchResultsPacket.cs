@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Models.Packets.ServerPackets;
 
-public class MatchResults : ServerPacket
+public class MatchResultsPacket : ServerPacket
 {
     public override ServerPacketTypes PacketType => ServerPacketTypes.MatchResults;
     
@@ -27,7 +27,7 @@ public class MatchResults : ServerPacket
     public readonly UserInfo NewClientUserInfo;
 
     [JsonConstructor]
-    public MatchResults(ScoreSubmissionPacket opponentScore, ScoreSubmissionPacket yourScore, MatchWinner winner, int mmrChange, UserInfo newOpponentUserInfo, UserInfo newClientUserInfo)
+    public MatchResultsPacket(ScoreSubmissionPacket opponentScore, ScoreSubmissionPacket yourScore, MatchWinner winner, int mmrChange, UserInfo newOpponentUserInfo, UserInfo newClientUserInfo)
     {
         OpponentScore = opponentScore;
         YourScore = yourScore;

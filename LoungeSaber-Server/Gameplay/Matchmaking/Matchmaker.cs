@@ -1,5 +1,6 @@
 ﻿using System.Timers;
 using LoungeSaber_Server.Models.Client;
+using LoungeSaber_Server.Models.Match;
 using LoungeSaber_Server.Models.Packets.ServerPackets;
 using Timer = System.Timers.Timer;
 
@@ -49,7 +50,7 @@ public static class Matchmaker
         });
     }
 
-    private static void OnMatchEnded(MatchResults? results, Match.Match match)
+    private static void OnMatchEnded(MatchResultsData results, Match.Match match)
     {
         match.OnMatchEnded -= OnMatchEnded;
 
@@ -63,6 +64,7 @@ public static class Matchmaker
         if (Program.Debug)
         {
             var match = new Match.Match(client, new DummyConnectedClient());
+            OnMatchStarted?.Invoke(match);
             await match.StartMatch();
             return;
         }

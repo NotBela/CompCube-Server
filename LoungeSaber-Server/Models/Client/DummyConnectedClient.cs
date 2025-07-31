@@ -23,7 +23,7 @@ public class DummyConnectedClient()
             case ServerPacket.ServerPacketTypes.OpponentVoted:
                 break;
             case ServerPacket.ServerPacketTypes.MatchStarted:
-                var matchStartedPacket = packet as MatchStarted ?? throw new Exception("no way this is a valid thing that can happen lmfao");
+                var matchStartedPacket = packet as MatchStartedPacket ?? throw new Exception("no way this is a valid thing that can happen lmfao");
 
                 while (matchStartedPacket.StartingTime > DateTime.UtcNow);
                 

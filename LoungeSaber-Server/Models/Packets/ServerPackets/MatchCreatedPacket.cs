@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Models.Packets.ServerPackets;
 
-public class MatchCreated : ServerPacket
+public class MatchCreatedPacket : ServerPacket
 {
     public override ServerPacketTypes PacketType => ServerPacketTypes.MatchCreated;
     
@@ -16,7 +16,7 @@ public class MatchCreated : ServerPacket
     public readonly UserInfo Opponent;
 
     [JsonConstructor]
-    public MatchCreated(VotingMap[] maps, UserInfo opponent)
+    public MatchCreatedPacket(VotingMap[] maps, UserInfo opponent)
     {
         Maps = maps;
         Opponent = opponent;

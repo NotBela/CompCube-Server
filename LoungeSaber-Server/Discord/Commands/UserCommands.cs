@@ -27,12 +27,12 @@ public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
     }
 
     [SlashCommand("profile", "View the profile of yourself or another user")]
-    public void ProfileByUser(User? user = null, string? id = null)
+    public InteractionMessageProperties ProfileByUser(User? user = null, string? id = null)
     {
         if (id != null)
         {
-            Context.Interaction.SendResponseAsync(InteractionCallback.Message(GetUserProfileMessage(UserData.Instance.GetUserById(id))));
-            return;
+            var userById = UserData.Instance.GetUserById(id);
+            return GetUserProfileMessage(userById);
         }
         
         if (user == null)
@@ -40,7 +40,7 @@ public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
         
         var userProfile = UserData.Instance.GetUserByDiscordId(user.Id.ToString());
         
-        Context.Interaction.SendResponseAsync(InteractionCallback.Message(GetUserProfileMessage(userProfile)));
+        return GetUserProfileMessage(userProfile);
     }
 
     private InteractionMessageProperties GetUserProfileMessage(UserInfo? userInfo)

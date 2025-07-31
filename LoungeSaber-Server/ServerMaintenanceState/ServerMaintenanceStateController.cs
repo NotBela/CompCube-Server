@@ -2,7 +2,7 @@
 
 public static class ServerMaintenanceStateController
 {
-    private static ServerState _state = ServerState.Online;
+    private static ServerState _state = ServerState.Maintenance;
 
     public static ServerState State
     {

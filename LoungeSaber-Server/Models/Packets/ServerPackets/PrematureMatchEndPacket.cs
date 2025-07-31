@@ -2,7 +2,7 @@
 
 namespace LoungeSaber_Server.Models.Packets.ServerPackets;
 
-public class PrematureMatchEnd : ServerPacket
+public class PrematureMatchEndPacket : ServerPacket
 {
     public override ServerPacketTypes PacketType => ServerPacketTypes.PrematureMatchEnd;
     
@@ -10,7 +10,7 @@ public class PrematureMatchEnd : ServerPacket
     public readonly string Reason;
 
     [JsonConstructor]
-    public PrematureMatchEnd(string reason)
+    public PrematureMatchEndPacket(string reason)
     {
         Reason = reason;
     }

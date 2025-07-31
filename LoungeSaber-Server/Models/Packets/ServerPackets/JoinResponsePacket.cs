@@ -2,7 +2,7 @@
 
 namespace LoungeSaber_Server.Models.Packets.ServerPackets;
 
-public class JoinResponse : ServerPacket
+public class JoinResponsePacket : ServerPacket
 {
     public override ServerPacketTypes PacketType => ServerPacketTypes.JoinResponse;
         
@@ -12,7 +12,7 @@ public class JoinResponse : ServerPacket
     [JsonProperty("message")]
     public string Message { get; private set; }
 
-    public JoinResponse(bool successful, string message)
+    public JoinResponsePacket(bool successful, string message)
     {
         Successful = successful;
         Message = message;

@@ -2,7 +2,7 @@
 
 namespace LoungeSaber_Server.Models.Packets.ServerPackets;
 
-public class OpponentVoted : ServerPacket
+public class OpponentVotedPacket : ServerPacket
 {
     public override ServerPacketTypes PacketType => ServerPacketTypes.OpponentVoted;
     
@@ -10,7 +10,7 @@ public class OpponentVoted : ServerPacket
     public readonly int VoteIndex;
 
     [JsonConstructor]
-    public OpponentVoted(int voteIndex)
+    public OpponentVotedPacket(int voteIndex)
     {
         VoteIndex = voteIndex;
     }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Map;
+using LoungeSaber_Server.Models.Match;
 using LoungeSaber_Server.Models.Packets;
 using LoungeSaber_Server.Models.Packets.ServerPackets;
 using LoungeSaber_Server.Models.Packets.UserPackets;
@@ -13,14 +14,18 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
     public readonly ConnectedClient PlayerOne = playerOne;
     public readonly ConnectedClient PlayerTwo = playerTwo;
 
+    private const int KFactor = 75;
+
     private readonly List<(VotingMap, ConnectedClient)> _userVotes = [];
 
     private ScoreSubmissionPacket? _playerOneScore = null;
     private ScoreSubmissionPacket? _playerTwoScore = null;
     
     private readonly VotingMap[] _mapSelections = GetRandomMapSelections(3);
+
+    private VotingMap? _selectedMap;
     
-    public event Action<MatchResults?, Match>? OnMatchEnded;
+    public event Action<MatchResultsData, Match>? OnMatchEnded;
     public event Action<ConnectedClient, int, string>? OnPlayerPunished;
 
     private const int MmrLossOnDisconnect = 50;
@@ -33,24 +38,27 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
         PlayerOne.OnUserVoted += OnUserVoted;
         PlayerTwo.OnUserVoted += OnUserVoted;
         
-        await PlayerOne.SendPacket(new MatchCreated(_mapSelections, PlayerTwo.UserInfo));
-        await PlayerTwo.SendPacket(new MatchCreated(_mapSelections, PlayerOne.UserInfo));
+        await PlayerOne.SendPacket(new MatchCreatedPacket(_mapSelections, PlayerTwo.UserInfo));
+        await PlayerTwo.SendPacket(new MatchCreatedPacket(_mapSelections, PlayerOne.UserInfo));
     }
 
     private async void OnPlayerDisconnected(ConnectedClient client)
     {
         try
         {
-            var mmrChange = GetMmrChange(GetOppositeClient(client).UserInfo, client.UserInfo);
+            var winner = GetOppositeClient(client).UserInfo;
+            var loser = GetOppositeClient(client).UserInfo;
+            
+            var mmrChange = GetMmrChange(winner, loser);
             
             UserData.Instance.ApplyMmrChange(client.UserInfo, -mmrChange - MmrLossOnDisconnect);
             UserData.Instance.ApplyMmrChange(GetOppositeClient(client).UserInfo, mmrChange);
             
             OnPlayerPunished?.Invoke(client, 50, "Leaving Match Early");
             
-            await GetOppositeClient(client).SendPacket(new PrematureMatchEnd("OpponentDisconnected"));
+            await GetOppositeClient(client).SendPacket(new PrematureMatchEndPacket("OpponentDisconnected"));
             
-            EndMatch(null);
+            EndMatch(new MatchResultsData(MatchScore.GetEmptyMatchScore(winner), MatchScore.GetEmptyMatchScore(loser), mmrChange, null, true));
         }
         catch (Exception e)
         {
@@ -60,13 +68,14 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
     
     
 
-    private void EndMatch(MatchResults? results)
+    private void EndMatch(MatchResultsData results)
     {
         PlayerOne.OnDisconnected -= OnPlayerDisconnected;
         PlayerTwo.OnDisconnected -= OnPlayerDisconnected;
         
         PlayerOne.StopListeningToClient();
         PlayerTwo.StopListeningToClient();
+        
         OnMatchEnded?.Invoke(results, this);
     }
 
@@ -78,21 +87,21 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
         
             _userVotes.Add((_mapSelections[vote.VoteIndex], client));
 
-            await GetOppositeClient(client).SendPacket(new OpponentVoted(vote.VoteIndex));
+            await GetOppositeClient(client).SendPacket(new OpponentVotedPacket(vote.VoteIndex));
 
             if (_userVotes.Count != 2) 
                 return;
             
             var random = new Random();
             
-            var selectedMap = _userVotes[random.Next(_userVotes.Count)].Item1;
+            _selectedMap = _userVotes[random.Next(_userVotes.Count)].Item1;
             
             PlayerOne.OnScoreSubmission += OnScoreSubmitted;
             PlayerTwo.OnScoreSubmission += OnScoreSubmitted;
 
             await Task.Delay(3000);
 
-            SendToBothClients(new MatchStarted(selectedMap, DateTime.UtcNow.AddSeconds(15),
+            SendToBothClients(new MatchStartedPacket(_selectedMap, DateTime.UtcNow.AddSeconds(15),
                 DateTime.UtcNow.AddSeconds(25)));
         }
         catch (Exception e)
@@ -122,19 +131,21 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
             }
             
             var loserScoreAndClient = winnerScoreAndClient.Item1 == _playerOneScore ? (_playerTwoScore, PlayerTwo) : (_playerOneScore, PlayerOne);
+            
+            var winnerMatchScore = GetMatchScoreFromScoreSubmission(winnerScoreAndClient.Item1, winnerScoreAndClient.Item2.UserInfo);
+            var loserMatchScore =
+                GetMatchScoreFromScoreSubmission(loserScoreAndClient.Item1, loserScoreAndClient.Item2.UserInfo);
 
             var mmrChange = GetMmrChange(winnerScoreAndClient.Item2.UserInfo, loserScoreAndClient.Item2.UserInfo);
 
             var newWinnerUserData = UserData.Instance.ApplyMmrChange(winnerScoreAndClient.Item2.UserInfo, mmrChange);
             var newLoserUserData = UserData.Instance.ApplyMmrChange(loserScoreAndClient.Item2.UserInfo, -mmrChange);
-
-            var winnerResults = new MatchResults(loserScoreAndClient.Item1, winnerScoreAndClient.Item1,
-                MatchResults.MatchWinner.You, mmrChange, newLoserUserData, newWinnerUserData);
             
-            await winnerScoreAndClient.Item2.SendPacket(winnerResults);
-            await loserScoreAndClient.Item2.SendPacket(new MatchResults(winnerScoreAndClient.Item1, loserScoreAndClient.Item1, MatchResults.MatchWinner.Opponent, mmrChange, newWinnerUserData, newLoserUserData));
+            await winnerScoreAndClient.Item2.SendPacket(new MatchResultsPacket(loserScoreAndClient.Item1, winnerScoreAndClient.Item1,
+                MatchResultsPacket.MatchWinner.You, mmrChange, newLoserUserData, newWinnerUserData));
+            await loserScoreAndClient.Item2.SendPacket(new MatchResultsPacket(winnerScoreAndClient.Item1, loserScoreAndClient.Item1, MatchResultsPacket.MatchWinner.Opponent, mmrChange, newWinnerUserData, newLoserUserData));
             
-            EndMatch(winnerResults);
+            EndMatch(new MatchResultsData(winnerMatchScore, loserMatchScore, mmrChange, _selectedMap, false));
         }
         catch (Exception e)
         {
@@ -142,10 +153,16 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
         }
     }
 
+    private MatchScore GetMatchScoreFromScoreSubmission(ScoreSubmissionPacket scoreSubmission, UserInfo userInfo)
+    {
+        return new MatchScore(userInfo, scoreSubmission.Score, (float) scoreSubmission.Score / scoreSubmission.MaxScore, scoreSubmission.ProMode, scoreSubmission.MissCount, scoreSubmission.FullCombo);
+    }
+
     private int GetMmrChange(UserInfo winner, UserInfo loser)
     {
-        // TODO
-        return 0;
+        var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Mmr - loser.Mmr) / 400.0))));
+
+        return (int) (KFactor * p);
     }
 
     private void SendToBothClients(ServerPacket packet)
