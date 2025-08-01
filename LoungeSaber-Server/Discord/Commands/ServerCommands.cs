@@ -1,23 +1,23 @@
 ﻿using LoungeSaber_Server.Discord.Events;
-using LoungeSaber_Server.ServerMaintenanceState;
+using LoungeSaber_Server.Models.Server;
 using NetCord;
 using NetCord.Services.ApplicationCommands;
 
 namespace LoungeSaber_Server.Discord.Commands;
 
-public class ServerCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class ServerCommands(ServerStatusManager serverStatusManager, MatchCompletedMessageManager matchCompletedMessageManager) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("openserver", "yeah", DefaultGuildUserPermissions = Permissions.Administrator, Contexts = [InteractionContextType.Guild])]
     public async Task<string> OpenServer()
     {
-        ServerMaintenanceStateController.State = ServerMaintenanceStateController.ServerState.Online;
+        serverStatusManager.State = ServerStatusManager.ServerState.Online;
 
         var channel = await Context.Client.Rest.GetChannelAsync(1400279911008174282) as TextChannel;
 
         if (channel == null)
             return "Could not find the match logging channel!";
         
-        MatchCompletedMessageManager.Instance.Init(channel);
+        matchCompletedMessageManager.Init(channel);
 
         return "Set the server state to online!";
     }

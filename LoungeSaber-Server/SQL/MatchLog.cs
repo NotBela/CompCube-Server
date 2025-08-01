@@ -5,11 +5,11 @@ using LoungeSaber_Server.Models.Match;
 
 namespace LoungeSaber_Server.SQL;
 
-public class MatchLog : Database
+public class MatchLog(UserData userData) : Database
 {
-    public static readonly MatchLog Instance = new();
-
-    private static readonly Random Random = new();
+    private readonly UserData _userData = userData;
+    
+    private readonly Random _random = new();
     
     protected override string DatabaseName => "MatchLog";
     
@@ -34,8 +34,8 @@ public class MatchLog : Database
                 return null;
             
             var matchId = reader.GetInt32(0);
-            var winner = UserData.Instance.GetUserById(reader.GetString(1)) ?? throw new Exception($"Could not find user {reader.GetString(1)}");
-            var loser = UserData.Instance.GetUserById(reader.GetString(2)) ?? throw new Exception($"Could not find user {reader.GetString(2)}");
+            var winner = _userData.GetUserById(reader.GetString(1)) ?? throw new Exception($"Could not find user {reader.GetString(1)}");
+            var loser = _userData.GetUserById(reader.GetString(2)) ?? throw new Exception($"Could not find user {reader.GetString(2)}");
             var exchange = reader.GetInt32(3);
             var winnerScore = Score.Deserialize(reader.GetString(4));
             var loserScore = Score.Deserialize(reader.GetString(5));
@@ -76,7 +76,7 @@ public class MatchLog : Database
         var idArr = new int[6];
 
         for (var i = 0; i < idArr.Length; i++)
-            idArr[i] = Random.Next(0, 10);
+            idArr[i] = _random.Next(0, 10);
 
         var id = int.Parse(string.Join("", idArr));
 

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using BeatSaverSharp.Models;
 using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Packets;
 using LoungeSaber_Server.Models.Packets.ServerPackets;
@@ -9,30 +10,42 @@ using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server.Gameplay.Matchmaking;
 
-public static class ConnectionManager
+public class ConnectionManager : IDisposable
 {
-    //TODO: change listener ip when not developing
-    private static readonly TcpListener Listener = new(IPAddress.Any, 8008);
-
-    private static readonly Thread ListenForClientsThread = new(ListenForClients);
+    private readonly UserData _userData;
     
-    private static bool _isStarted = false;
+    //TODO: change listener ip when not developing
+    private readonly TcpListener _listener = new(IPAddress.Any, 8008);
 
-    public static void Start()
+    private readonly Thread _listenForClientsThread;
+    
+    private bool _isStarted = false;
+
+    public event Action<ConnectedClient>? OnClientJoined;
+
+    public ConnectionManager(UserData userData)
     {
-        Listener.Start();
+        _userData = userData;
+        
+        _listenForClientsThread = new Thread(ListenForClients);
+        Start();
+    }
+    
+    private void Start()
+    {
+        _listener.Start();
         _isStarted = true;
         
-        ListenForClientsThread.Start();
+        _listenForClientsThread.Start();
     }
 
-    private static async void ListenForClients()
+    private async void ListenForClients()
     {
         try
         {
             while (_isStarted)
             {
-                var client = Listener.AcceptTcpClient();
+                var client = await _listener.AcceptTcpClientAsync();
                 
                 try
                 {
@@ -46,11 +59,11 @@ public static class ConnectionManager
 
                     var packet = UserPacket.Deserialize(json) as JoinRequestPacket ?? throw new Exception("Could not deserialize packet!");
 
-                    var connectedClient = new ConnectedClient(client, UserData.Instance.UpdateUserDataOnLogin(packet.UserId, packet.UserName));
+                    var connectedClient = new ConnectedClient(client, _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName));
 
                     await connectedClient.SendPacket(new JoinResponsePacket(true, ""));
                     
-                    await Matchmaker.AddClientToPool(connectedClient);
+                    OnClientJoined?.Invoke(connectedClient);
                 }
                 catch (Exception e)
                 {
@@ -65,9 +78,14 @@ public static class ConnectionManager
         }
     }
 
-    public static void Stop()
+    public void Stop()
     {
         _isStarted = false;
-        Listener.Stop();
+        _listener.Dispose();
+    }
+
+    public void Dispose()
+    {
+        Stop();
     }
 }

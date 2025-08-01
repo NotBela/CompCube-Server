@@ -3,7 +3,7 @@ using System.Data.SQLite;
 
 namespace LoungeSaber_Server.SQL;
 
-public abstract class Database
+public abstract class Database : IDisposable
 {
     protected abstract string DatabaseName { get; }
     
@@ -16,9 +16,11 @@ public abstract class Database
     protected Database()
     {
         Connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db;")}");
+        
+        Start();
     }
 
-    public void Start()
+    private void Start()
     {
         if (IsOpen) 
             return;
@@ -38,4 +40,6 @@ public abstract class Database
     }
 
     protected abstract void CreateInitialTables();
+
+    public void Dispose() => Stop();
 }

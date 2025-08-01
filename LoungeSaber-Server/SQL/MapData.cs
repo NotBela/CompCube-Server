@@ -4,8 +4,6 @@ namespace LoungeSaber_Server.SQL;
 
 public class MapData : Database
 {
-    public static readonly MapData Instance = new();
-    
     protected override string DatabaseName => "MapData";
     
     protected override void CreateInitialTables()

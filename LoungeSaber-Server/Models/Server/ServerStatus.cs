@@ -1,25 +1,18 @@
-﻿using LoungeSaber_Server.ServerMaintenanceState;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Models.Server;
 
-public class ServerStatus
+public class ServerStatus(
+    string[] allowedGameVersions,
+    string[] allowedModVersions,
+    ServerStatusManager.ServerState state)
 {
     [JsonProperty("allowedGameVersions")]
-    public readonly string[] AllowedGameVersions;
+    public readonly string[] AllowedGameVersions = allowedGameVersions;
     
     [JsonProperty("allowedModVersions")]
-    public readonly string[] AllowedModVersions;
+    public readonly string[] AllowedModVersions = allowedModVersions;
     
     [JsonProperty("state")]
-    public readonly ServerMaintenanceStateController.ServerState State;
-
-    public ServerStatus(string[] allowedGameVersions, string[] allowedModVersions, ServerMaintenanceStateController.ServerState state)
-    {
-        AllowedGameVersions = allowedGameVersions;
-        AllowedModVersions = allowedModVersions;
-        State = state;
-    }
-
-    public static ServerStatus GetServerMaintenanceState() => new(["1.39.1", "1.40.8", "1.40.5"], ["1.0.0"], ServerMaintenanceStateController.State);
+    public readonly ServerStatusManager.ServerState State = state;
 }

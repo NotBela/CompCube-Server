@@ -7,8 +7,6 @@ namespace LoungeSaber_Server.SQL;
 
 public class UserData : Database
 {
-    public static readonly UserData Instance = new();
-
     protected override string DatabaseName => "LoungeData";
 
     public UserInfo? GetUserByDiscordId(string discordId)

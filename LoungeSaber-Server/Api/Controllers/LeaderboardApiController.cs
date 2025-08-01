@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoungeSaber_Server.Api.Controllers;
 
 [ApiController]
-public class LeaderboardApiController : ControllerBase
+public class LeaderboardApiController(UserData userData) : ControllerBase
 {
     [HttpGet("api/leaderboard/range/")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -13,7 +13,7 @@ public class LeaderboardApiController : ControllerBase
     {
         range = Math.Min(range, 10);
 
-        var users = UserData.Instance.GetAllUsers().Where(i => i.Rank >= start).ToArray();
+        var users = userData.GetAllUsers().Where(i => i.Rank >= start).ToArray();
         Array.Resize(ref users, Math.Min(users.Length, range));
 
         return users;
@@ -24,7 +24,7 @@ public class LeaderboardApiController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<UserInfo[]> GetAroundUser(string userId)
     {
-        var users = UserData.Instance.GetAllUsers();
+        var users = userData.GetAllUsers();
 
         if (users.All(i => i?.UserId != userId))
             return NotFound();

@@ -8,22 +8,22 @@ using Color = NetCord.Color;
 
 namespace LoungeSaber_Server.Discord.Commands;
 
-public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
+public class UserCommands(UserData userData) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("link", "Link your discord account to your LoungeSaber profile!")]
     public string Link(string scoresaberId)
     {
-        if (UserData.Instance.GetUserByDiscordId(Context.User.Id.ToString()) != null)
+        if (userData.GetUserByDiscordId(Context.User.Id.ToString()) != null)
             return "This user is already linked to a discord account.";
 
-        var userData = UserData.Instance.GetUserById(scoresaberId);
+        var userInfo = userData.GetUserById(scoresaberId);
         
-        if (userData == null)
+        if (userInfo == null)
             return "This user does not have a LoungeSaber account yet!";
         
-        UserData.Instance.LinkDiscordToUser(userData.UserId, Context.User.Id.ToString());
+        userData.LinkDiscordToUser(userInfo.UserId, Context.User.Id.ToString());
 
-        return $"Successfully linked discord account {Context.User.Username} to user {userData.Username}";
+        return $"Successfully linked discord account {Context.User.Username} to user {userInfo.Username}";
     }
 
     [SlashCommand("profile", "View the profile of yourself or another user")]
@@ -31,14 +31,14 @@ public class UserCommands : ApplicationCommandModule<ApplicationCommandContext>
     {
         if (id != null)
         {
-            var userById = UserData.Instance.GetUserById(id);
+            var userById = userData.GetUserById(id);
             return GetUserProfileMessage(userById);
         }
         
         if (user == null)
             user = Context.User;
         
-        var userProfile = UserData.Instance.GetUserByDiscordId(user.Id.ToString());
+        var userProfile = userData.GetUserByDiscordId(user.Id.ToString());
         
         return GetUserProfileMessage(userProfile);
     }

@@ -6,11 +6,11 @@ using NetCord.Rest;
 
 namespace LoungeSaber_Server.Discord;
 
-public static class MatchInfoMessageFormatter
+public class MatchInfoMessageFormatter(BeatSaverApiWrapper beatSaver)
 {
-    public static async Task<EmbedProperties> GetEmbed(MatchResultsData results, string header, bool showRelativeTimestamp)
+    public async Task<EmbedProperties> GetEmbed(MatchResultsData results, string header, bool showRelativeTimestamp)
     {
-        var beatSaverMap = results.Map == null ? null : await BeatSaverApiWrapper.GetBeatmapFromHash(results.Map.Hash);
+        var beatSaverMap = results.Map == null ? null : await beatSaver.GetBeatmapFromHash(results.Map.Hash);
 
         var embed = new EmbedProperties
         {

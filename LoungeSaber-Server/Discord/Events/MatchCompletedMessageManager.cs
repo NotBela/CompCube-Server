@@ -8,10 +8,8 @@ using NetCord.Rest;
 
 namespace LoungeSaber_Server.Discord.Events;
 
-public class MatchCompletedMessageManager
+public class MatchCompletedMessageManager(Matchmaker matchmaker, MatchInfoMessageFormatter messageFormatter)
 {
-    public static readonly MatchCompletedMessageManager Instance = new();
-
     private TextChannel? _channel;
 
     public void Init(TextChannel channel)
@@ -21,12 +19,12 @@ public class MatchCompletedMessageManager
         
         _channel = channel;
         
-        Matchmaker.OnMatchStarted += OnMatchStarted;
+        matchmaker.OnMatchStarted += OnMatchStarted;
     }
 
     public void Stop()
     {
-        Matchmaker.OnMatchStarted -= OnMatchStarted;
+        matchmaker.OnMatchStarted -= OnMatchStarted;
     }
     
     private void OnMatchStarted(Match match) => match.OnMatchEnded += OnMatchEnded;
@@ -43,7 +41,7 @@ public class MatchCompletedMessageManager
             if (_channel == null) 
                 return;
 
-            var embed = await MatchInfoMessageFormatter.GetEmbed(results, "Match results:", false);
+            var embed = await messageFormatter.GetEmbed(results, "Match results:", false);
 
             await _channel.SendMessageAsync(new MessageProperties()
             {

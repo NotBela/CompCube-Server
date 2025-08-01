@@ -1,6 +1,7 @@
-using LoungeSaber_Server.Discord;
-using LoungeSaber_Server.Gameplay.Matchmaking;
-using LoungeSaber_Server.SQL;
+using LoungeSaber_Server.Installer;
+using NetCord.Hosting.Gateway;
+using NetCord.Hosting.Services;
+using NetCord.Hosting.Services.ApplicationCommands;
 
 namespace LoungeSaber_Server
 {
@@ -8,21 +9,34 @@ namespace LoungeSaber_Server
     {
         public const bool Debug = true;
         
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            try
+            var builder = WebApplication.CreateBuilder();
+
+            BindingInstaller.InstallBindings(builder.Services);
+            
+            builder.Services.AddDiscordGateway().AddApplicationCommands();
+
+            builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+            
+            var host = builder.Build();
+            
+            if (host.Environment.IsDevelopment())
             {
-                UserData.Instance.Start();
-                MapData.Instance.Start();
-                MatchLog.Instance.Start();
-                ConnectionManager.Start();
-                DiscordBot.Start();
-                Api.Api.Start();
+                host.UseSwagger();
+                host.UseSwaggerUI();
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+
+            host.UseHttpsRedirection();
+            host.MapControllers();
+            
+            host.AddModules(typeof(Program).Assembly);
+
+            host.UseGatewayHandlers();
+
+            await host.RunAsync();
         }
     }
 }

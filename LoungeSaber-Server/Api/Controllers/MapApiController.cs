@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoungeSaber_Server.Api.Controllers;
 
 [ApiController]
-public class MapApiController : ControllerBase
+public class MapApiController(MapData mapData) : ControllerBase
 {
     [HttpGet("/api/maps/hashes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<string[]> GetAllMapHashes() => MapData.Instance.GetAllMaps().Select(i => i.Hash).ToArray();
+    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMaps().Select(i => i.Hash).ToArray();
 }
