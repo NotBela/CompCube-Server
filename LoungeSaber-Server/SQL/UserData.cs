@@ -13,7 +13,7 @@ public class UserData : Database
 
     public UserInfo? GetUserByDiscordId(string discordId)
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData WHERE discordId = @discordId LIMIT 1";
         command.Parameters.AddWithValue("discordId", discordId);
         
@@ -27,7 +27,7 @@ public class UserData : Database
 
     public void LinkDiscordToUser(string userId, string discordId)
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
         command.Parameters.AddWithValue("userId", userId);
         command.Parameters.AddWithValue("discordId", discordId);
@@ -37,7 +37,7 @@ public class UserData : Database
 
     public UserInfo? GetUserById(string userId)
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData WHERE userData.id = @id LIMIT 1";
         command.Parameters.AddWithValue("id", userId);
         using var reader = command.ExecuteReader();
@@ -59,7 +59,7 @@ public class UserData : Database
         Badge? badge = null;
         string? discordId = null;
 
-        var rankCommand = _connection.CreateCommand();
+        var rankCommand = Connection.CreateCommand();
         rankCommand.CommandText = $"SELECT COUNT(*) FROM userData WHERE mmr > @mmrThreshold ORDER BY mmr";
         rankCommand.Parameters.AddWithValue("mmrThreshold", mmr);
         var rank = (long) (rankCommand.ExecuteScalar() ?? throw new Exception("Could not get user rank!")) + 1;
@@ -75,7 +75,7 @@ public class UserData : Database
 
     public List<UserInfo> GetAllUsers()
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData ORDER BY mmr DESC";
         
         var userList = new List<UserInfo>();
@@ -94,7 +94,7 @@ public class UserData : Database
 
     public UserInfo ApplyMmrChange(UserInfo user, int mmrChange)
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET mmr = @newMmr WHERE userData.id = @id";
         command.Parameters.AddWithValue("newMmr", Math.Max(0, user.Mmr + mmrChange));
         command.Parameters.AddWithValue("id", user.UserId);
@@ -107,7 +107,7 @@ public class UserData : Database
     {
         if (badgeName == null) return null;
         
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM badges WHERE badgeName = @badgeName LIMIT 1";
         command.Parameters.AddWithValue("@badgeName", badgeName);
         using var reader = command.ExecuteReader();
@@ -131,7 +131,7 @@ public class UserData : Database
         var user = GetUserById(userId);
         if (user != null)
         {
-            var updateUserNameCommand = _connection.CreateCommand();
+            var updateUserNameCommand = Connection.CreateCommand();
             updateUserNameCommand.CommandText = "UPDATE userData SET username = @userName WHERE userData.id = @userId";
             updateUserNameCommand.Parameters.AddWithValue("userName", userName);
             updateUserNameCommand.Parameters.AddWithValue("userId", userId);
@@ -141,7 +141,7 @@ public class UserData : Database
             return GetUserById(userId) ??  throw new Exception("Could not find updated user!");
         }
         
-        var addToUserDataCommand = _connection.CreateCommand();
+        var addToUserDataCommand = Connection.CreateCommand();
         addToUserDataCommand.CommandText = "INSERT INTO userData VALUES (@userId, 1000, @userName, null, null)";
         addToUserDataCommand.Parameters.AddWithValue("userId", userId);
         addToUserDataCommand.Parameters.AddWithValue("userName", userName);
@@ -158,14 +158,14 @@ public class UserData : Database
 
     private void CreateBadgeTable()
     {
-        var command = _connection.CreateCommand();
+        var command = Connection.CreateCommand();
         command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL PRIMARY KEY, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
         command.ExecuteNonQuery();
     }
     
     private void CreateUserDataTable()
     {
-        var dbCommand = _connection.CreateCommand();
+        var dbCommand = Connection.CreateCommand();
         dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT, discordID TEXT UNIQUE)";
         dbCommand.ExecuteNonQuery();
     }

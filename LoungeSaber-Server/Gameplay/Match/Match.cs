@@ -30,6 +30,8 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
 
     private const int MmrLossOnDisconnect = 50;
 
+    private readonly int Id = MatchLog.Instance.GetValidMatchId();
+
     public async Task StartMatch()
     {
         PlayerOne.OnDisconnected += OnPlayerDisconnected;
@@ -58,7 +60,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
             
             await GetOppositeClient(client).SendPacket(new PrematureMatchEndPacket("OpponentDisconnected"));
             
-            EndMatch(new MatchResultsData(MatchScore.GetEmptyMatchScore(winner), MatchScore.GetEmptyMatchScore(loser), mmrChange, null, true));
+            EndMatch(new MatchResultsData(new MatchScore(winner, Score.Empty), new MatchScore(loser, Score.Empty), mmrChange, null, true, Id, DateTime.UtcNow));
         }
         catch (Exception e)
         {
@@ -76,6 +78,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
         PlayerOne.StopListeningToClient();
         PlayerTwo.StopListeningToClient();
         
+        MatchLog.Instance.AddMatchToTable(results);
         OnMatchEnded?.Invoke(results, this);
     }
 
@@ -145,7 +148,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
                 MatchResultsPacket.MatchWinner.You, mmrChange, newLoserUserData, newWinnerUserData));
             await loserScoreAndClient.Item2.SendPacket(new MatchResultsPacket(winnerScoreAndClient.Item1, loserScoreAndClient.Item1, MatchResultsPacket.MatchWinner.Opponent, mmrChange, newWinnerUserData, newLoserUserData));
             
-            EndMatch(new MatchResultsData(winnerMatchScore, loserMatchScore, mmrChange, _selectedMap, false));
+            EndMatch(new MatchResultsData(winnerMatchScore, loserMatchScore, mmrChange, _selectedMap, false, Id, DateTime.UtcNow));
         }
         catch (Exception e)
         {
@@ -155,7 +158,7 @@ public class Match(ConnectedClient playerOne, ConnectedClient playerTwo)
 
     private MatchScore GetMatchScoreFromScoreSubmission(ScoreSubmissionPacket scoreSubmission, UserInfo userInfo)
     {
-        return new MatchScore(userInfo, scoreSubmission.Score, (float) scoreSubmission.Score / scoreSubmission.MaxScore, scoreSubmission.ProMode, scoreSubmission.MissCount, scoreSubmission.FullCombo);
+        return new MatchScore(userInfo, new Score(scoreSubmission.Score, (float) scoreSubmission.Score / scoreSubmission.MaxScore, scoreSubmission.ProMode, scoreSubmission.MissCount, scoreSubmission.FullCombo));
     }
 
     private int GetMmrChange(UserInfo winner, UserInfo loser)

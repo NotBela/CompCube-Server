@@ -20,6 +20,10 @@ public class VotingMap
         Category = category;
     }
 
+    public string Serialize() => JsonConvert.SerializeObject(this);
+
+    public static VotingMap? Deserialize(string json) => JsonConvert.DeserializeObject<VotingMap?>(json);
+
     public enum CategoryType
     {
         Acc,

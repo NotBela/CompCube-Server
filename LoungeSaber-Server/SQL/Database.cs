@@ -7,15 +7,15 @@ public abstract class Database
 {
     protected abstract string DatabaseName { get; }
     
-    protected readonly SQLiteConnection _connection;
+    protected readonly SQLiteConnection Connection;
 
     protected static string DataFolderPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
 
-    public bool IsOpen => _connection.State == ConnectionState.Open;
+    public bool IsOpen => Connection.State == ConnectionState.Open;
 
     protected Database()
     {
-        _connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db;")}");
+        Connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db;")}");
     }
 
     public void Start()
@@ -25,7 +25,7 @@ public abstract class Database
 
         Directory.CreateDirectory(DataFolderPath);
         
-        _connection.Open();
+        Connection.Open();
         CreateInitialTables();
     }
     
@@ -34,7 +34,7 @@ public abstract class Database
         if (!IsOpen) 
             return;
         
-        _connection.Close();
+        Connection.Close();
     }
 
     protected abstract void CreateInitialTables();

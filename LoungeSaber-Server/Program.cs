@@ -14,6 +14,7 @@ namespace LoungeSaber_Server
             {
                 UserData.Instance.Start();
                 MapData.Instance.Start();
+                MatchLog.Instance.Start();
                 ConnectionManager.Start();
                 DiscordBot.Start();
                 Api.Api.Start();

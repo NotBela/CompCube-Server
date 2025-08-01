@@ -1,12 +1,10 @@
 ﻿using System.Globalization;
+using LoungeSaber_Server.BeatSaverApi;
 using LoungeSaber_Server.Gameplay.Match;
 using LoungeSaber_Server.Gameplay.Matchmaking;
 using LoungeSaber_Server.Models.Match;
-using LoungeSaber_Server.Models.Packets.ServerPackets;
 using NetCord;
 using NetCord.Rest;
-using NetCord.Services.ApplicationCommands;
-using NetCord.Services.Commands;
 
 namespace LoungeSaber_Server.Discord.Events;
 
@@ -33,48 +31,24 @@ public class MatchCompletedMessageManager
     
     private void OnMatchStarted(Match match) => match.OnMatchEnded += OnMatchEnded;
 
-    private string FormatMatchScore(MatchScore score) =>
-        $"{score.User.Username} - {(score.RelativeScore * 100).ToString("F2", CultureInfo.InvariantCulture)}% {(score.FC ? "FC" : $"{score.Misses}x")}";
-
     private async void OnMatchEnded(MatchResultsData results, Match match)
     {
         try
         {
             match.OnMatchEnded -= OnMatchEnded;
 
-            if (results.Premature)
+            if (results.Premature || results.Map == null)
                 return;
 
             if (_channel == null) 
                 return;
 
-            MessageProperties message = "";
+            var embed = await MatchInfoMessageFormatter.GetEmbed(results, "Match results:", false);
 
-            var embed = new EmbedProperties
+            await _channel.SendMessageAsync(new MessageProperties()
             {
-                Title = "Match results:",
-                Description = "",
-                Fields =
-                [
-                    new()
-                    {
-                        Name = "Winner",
-                        Value = $"{FormatMatchScore(results.Winner)} ({results.Winner.User.Mmr} -> {results.Winner.User.Mmr + results.MmrChange})",
-                        Inline = true
-                    },
-                    new()
-                    {
-                        Name = "Loser",
-                        Value = $"{FormatMatchScore(results.Loser)} ({results.Loser.User.Mmr} -> {results.Loser.User.Mmr - results.MmrChange})",
-                        Inline = true
-                    }
-                ],
-                Timestamp = DateTime.Now,
-            };
-
-            message.Embeds = [embed];
-
-            await _channel.SendMessageAsync(message);
+                Embeds = [embed]
+            });
         }
         catch (Exception e)
         {

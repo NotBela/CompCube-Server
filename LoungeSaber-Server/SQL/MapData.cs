@@ -10,7 +10,7 @@ public class MapData : Database
     
     protected override void CreateInitialTables()
     {
-        var createDbCommand = _connection.CreateCommand();
+        var createDbCommand = Connection.CreateCommand();
         createDbCommand.CommandText = "CREATE TABLE IF NOT EXISTS mapData ( " + 
                                       "hash TEXT NOT NULL, " + 
                                       "difficulty TEXT NOT NULL, " + 
@@ -23,7 +23,7 @@ public class MapData : Database
     {
         var maps = new List<VotingMap>();
         
-        var dbCommand = _connection.CreateCommand();
+        var dbCommand = Connection.CreateCommand();
         dbCommand.CommandText = "SELECT * FROM mapData";
         using var reader = dbCommand.ExecuteReader();
 

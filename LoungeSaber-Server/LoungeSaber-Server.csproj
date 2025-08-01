@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="BeatSaverSharper" Version="3.4.5" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.15"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.6.25358.103" />
         <PackageReference Include="NetCord" Version="1.0.0-alpha.406" />
