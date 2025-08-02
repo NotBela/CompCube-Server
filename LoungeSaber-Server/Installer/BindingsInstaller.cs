@@ -9,7 +9,7 @@ using LoungeSaber_Server.SQL;
 
 namespace LoungeSaber_Server.Installer;
 
-public static class BindingInstaller
+public static class BindingsInstaller
 {
     public static void InstallBindings(IServiceCollection services)
     {

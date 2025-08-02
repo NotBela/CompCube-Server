@@ -13,7 +13,7 @@ namespace LoungeSaber_Server
         {
             var builder = WebApplication.CreateBuilder();
 
-            BindingInstaller.InstallBindings(builder.Services);
+            BindingsInstaller.InstallBindings(builder.Services);
             
             builder.Services.AddDiscordGateway().AddApplicationCommands();
 
