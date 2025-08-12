@@ -6,9 +6,9 @@ namespace LoungeSaber_Server.Models.ClientData;
 [method: JsonConstructor]
 public class DivisionInfo(DivisionInfo.DivisionName division, byte subDivision, string colorCode)
 {
-    [JsonProperty("division")] public readonly DivisionName Division = division;
-    [JsonProperty("subDivision")] public readonly byte SubDivision = subDivision;
-    [JsonProperty("color")] public readonly string Color = colorCode;
+    [JsonProperty("division")] public DivisionName Division { get; private set; } = division;
+    [JsonProperty("subDivision")] public byte SubDivision { get; private set; } = subDivision;
+    [JsonProperty("color")] public string Color { get; private set; } = colorCode;
 
     public static DivisionInfo GetDivisionFromMmr(int mmr)
     {
@@ -38,9 +38,15 @@ public class DivisionInfo(DivisionInfo.DivisionName division, byte subDivision, 
 
         throw new Exception("Invalid MMR range!");
         
-        bool IsInRangeOfValue(int lowerRange, int value, int upperRange) => Math.Clamp(lowerRange, value, upperRange) == value;
+        bool IsInRangeOfValue(int lowerRange, int value, int upperRange) => Math.Clamp(value, lowerRange, upperRange) == value;
 
-        byte GetSubDivision(int mmrValue, int mmrSpan) => (byte) (mmrSpan / mmrValue);
+        byte GetSubDivision(int mmrValue, int mmrSpan)
+        {
+            if (mmrValue == 0 || mmrSpan == 0)
+                return 1;
+            
+            return (byte) (mmrSpan / mmrValue);
+        }
     }
 
     public enum DivisionName

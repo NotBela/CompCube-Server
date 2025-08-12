@@ -12,14 +12,17 @@ public class UserInfo(string username, string userId, int mmr, Badge? badge, lon
     public string UserId { get; private set; } = userId;
 
     [JsonProperty("mmr")]
-    public int Mmr { get; private set; } = mmr;
+    public int Mmr { get; private set; }= mmr;
 
     [JsonProperty("badge")]
-    public Badge? Badge { get; private set; } = badge;
+    public Badge? Badge { get; private set; }= badge;
 
     [JsonProperty("rank")]
-    public long Rank { get; private set; } = rank;
+    public long Rank { get; private set; }= rank;
 
     [JsonProperty("discordId")]
-    public string? DiscordId { get; private set; } = discordId;
+    public string? DiscordId { get; private set; }= discordId;
+    
+    [JsonProperty("division")]
+    public DivisionInfo Division { get; private set; } = DivisionInfo.GetDivisionFromMmr(mmr);
 }
