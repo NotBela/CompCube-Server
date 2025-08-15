@@ -10,15 +10,8 @@ public class LeaderboardApiController(UserData userData) : ControllerBase
 {
     [HttpGet("api/leaderboard/range/")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public UserInfo[] GetLeaderboardRange(int start, int range)
-    {
-        range = Math.Min(range, 10);
-
-        var users = userData.GetAllUsers().Where(i => i.Rank >= start).ToArray();
-        Array.Resize(ref users, Math.Min(users.Length, range));
-
-        return users;
-    }
+    public ActionResult<UserInfo[]> GetLeaderboardRange(int start, int range) =>
+        userData.GetLeaderboardRange(start, range);
 
     [HttpGet("/api/leaderboard/aroundUser/{userId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]

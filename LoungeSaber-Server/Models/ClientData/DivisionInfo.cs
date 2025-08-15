@@ -4,10 +4,10 @@ using Newtonsoft.Json;
 namespace LoungeSaber_Server.Models.ClientData;
 
 [method: JsonConstructor]
-public class DivisionInfo(DivisionInfo.DivisionName division, byte subDivision, string colorCode)
+public class DivisionInfo(DivisionInfo.DivisionName division, int subDivision, string colorCode)
 {
     [JsonProperty("division")] public DivisionName Division { get; private set; } = division;
-    [JsonProperty("subDivision")] public byte SubDivision { get; private set; } = subDivision;
+    [JsonProperty("subDivision")] public int SubDivision { get; private set; } = subDivision;
     [JsonProperty("color")] public string Color { get; private set; } = colorCode;
 
     public static DivisionInfo GetDivisionFromMmr(int mmr)
@@ -16,36 +16,38 @@ public class DivisionInfo(DivisionInfo.DivisionName division, byte subDivision, 
             return new DivisionInfo(DivisionName.Iron, GetSubDivision(mmr, 1000), "#E4E4E6");
 
         if (IsInRangeOfValue(1000, mmr, 1999))
-            return new DivisionInfo(DivisionName.Bronze, GetSubDivision(mmr, 1000), "#CE8946");
+            return new DivisionInfo(DivisionName.Bronze, GetSubDivision(mmr - 1000, 1000), "#CE8946");
 
         if (IsInRangeOfValue(2000, mmr, 2999))
-            return new DivisionInfo(DivisionName.Silver, GetSubDivision(mmr, 1000), "#C4C4C4");
+            return new DivisionInfo(DivisionName.Silver, GetSubDivision(mmr - 2000, 1000), "#C4C4C4");
 
         if (IsInRangeOfValue(3000, mmr, 3999))
-            return new DivisionInfo(DivisionName.Gold, GetSubDivision(mmr, 1000), "#EFBF04");
+            return new DivisionInfo(DivisionName.Gold, GetSubDivision(mmr - 3000, 1000), "#EFBF04");
 
         if (IsInRangeOfValue(4000, mmr, 4999))
-            return new DivisionInfo(DivisionName.Diamond, GetSubDivision(mmr, 1000), "#4EE2EC");
+            return new DivisionInfo(DivisionName.Diamond, GetSubDivision(mmr - 4000, 1000), "#4EE2EC");
 
         if (IsInRangeOfValue(5000, mmr, 6499))
-            return new DivisionInfo(DivisionName.Platinum, GetSubDivision(mmr, 1500), "#D9D9D9");
+            return new DivisionInfo(DivisionName.Platinum, GetSubDivision(mmr - 5000, 1500), "#D9D9D9");
 
         if (IsInRangeOfValue(6500, mmr, 7999))
-            return new DivisionInfo(DivisionName.Master, GetSubDivision(mmr, 2000), "#950606");
+            return new DivisionInfo(DivisionName.Master, GetSubDivision(mmr - 6500, 2000), "#950606");
 
         if (IsInRangeOfValue(8000, mmr, int.MaxValue))
-            return new DivisionInfo(DivisionName.GrandMaster, GetSubDivision(mmr, 1), "#950606");
+            return new DivisionInfo(DivisionName.GrandMaster, 1, "#950606");
 
         throw new Exception("Invalid MMR range!");
         
         bool IsInRangeOfValue(int lowerRange, int value, int upperRange) => Math.Clamp(value, lowerRange, upperRange) == value;
 
-        byte GetSubDivision(int mmrValue, int mmrSpan)
+        int GetSubDivision(int mmrValue, int mmrSpan)
         {
             if (mmrValue == 0 || mmrSpan == 0)
                 return 1;
+
+            var value = (int) ((double) mmrValue / mmrSpan * 4) + 1;
             
-            return (byte) (mmrSpan / mmrValue);
+            return Math.Clamp(value, 1, 4);
         }
     }
 

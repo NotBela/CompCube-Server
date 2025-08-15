@@ -124,6 +124,16 @@ public class UserData : Database
         return null;
     }
     
+    public UserInfo[] GetLeaderboardRange(int start, int range)
+    {
+        range = Math.Min(range, 10);
+
+        var users = GetAllUsers().Where(i => i.Rank >= start).ToArray();
+        Array.Resize(ref users, Math.Min(users.Length, range));
+
+        return users;
+    }
+    
     public UserInfo UpdateUserDataOnLogin(string userId, string userName)
     {
         var user = GetUserById(userId);
