@@ -44,7 +44,7 @@ public class LeaderboardCommands(UserData userData) : ApplicationCommandModule<A
         new()
         {
             Title = pageNumber == -1 ? "Leaderboard" : $"Leaderboard (Page {pageNumber})",
-            Description = userList.Select(user => $"\n{user.Rank}. {user.Username} - {user.Mmr} MMR ({user.Division.Division} {new RomanNumeral(user.Division.SubDivision)})").Aggregate("", (current, lineString) => current + lineString)
+            Description = userList.Select(user => $"\n{user.Rank}. {user.Username} - {user.Mmr:N0} MMR ({user.Division.Division} {new RomanNumeral(user.Division.SubDivision)})").Aggregate("", (current, lineString) => current + lineString)
         };
 
 }
