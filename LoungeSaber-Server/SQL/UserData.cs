@@ -67,8 +67,10 @@ public class UserData : Database
             
         if (!reader.IsDBNull(4))
             discordId = reader.GetString(4);
+
+        var banned = reader.GetBoolean(5);
             
-        return new UserInfo(userName, userId, mmr, badge, rank, discordId);
+        return new UserInfo(userName, userId, mmr, badge, rank, discordId, banned);
     }
 
     public List<UserInfo> GetAllUsers()
@@ -90,18 +92,16 @@ public class UserData : Database
         return userList;
     }
 
-    public UserInfo ApplyMmrChange(UserInfo user, int mmrChange)
+    public void ApplyMmrChange(UserInfo user, int mmrChange)
     {
         var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET mmr = @newMmr WHERE userData.id = @id";
         command.Parameters.AddWithValue("newMmr", Math.Max(0, user.Mmr + mmrChange));
         command.Parameters.AddWithValue("id", user.UserId);
         command.ExecuteNonQuery();
-        
-        return GetUserById(user.UserId) ?? throw new Exception("Could not find updated user!");
     }
 
-    public Badge? GetBadge(string? badgeName)
+    private Badge? GetBadge(string? badgeName)
     {
         if (badgeName == null) return null;
         
@@ -186,7 +186,7 @@ public class UserData : Database
     private void CreateUserDataTable()
     {
         var dbCommand = Connection.CreateCommand();
-        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT, discordID TEXT UNIQUE)";
+        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT, discordID TEXT UNIQUE, banned BOOLEAN NOT NULL)";
         dbCommand.ExecuteNonQuery();
     }
 }

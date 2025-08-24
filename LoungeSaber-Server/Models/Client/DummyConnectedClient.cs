@@ -25,7 +25,7 @@ public class DummyConnectedClient(UserInfo userInfo, Logger logger)
 
                 while (matchStartedPacket.StartingTime > DateTime.UtcNow);
                 
-                ProcessRecievedPacket(new ScoreSubmissionPacket(100000, 100000, true, 0, true));
+                ProcessRecievedPacket(new ScoreSubmissionPacket(90000, 100000, true, 0, true));
                 break;
             case ServerPacket.ServerPacketTypes.MatchResults:
                 break;

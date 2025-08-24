@@ -3,7 +3,7 @@
 namespace LoungeSaber_Server.Models.ClientData;
 
 [method: JsonConstructor]
-public class UserInfo(string username, string userId, int mmr, Badge? badge, long rank, string? discordId)
+public class UserInfo(string username, string userId, int mmr, Badge? badge, long rank, string? discordId, bool banned)
 {
     [JsonProperty("username")]
     public string Username { get; private set; } = username;
@@ -21,7 +21,10 @@ public class UserInfo(string username, string userId, int mmr, Badge? badge, lon
     public long Rank { get; private set; }= rank;
 
     [JsonProperty("discordId")]
-    public string? DiscordId { get; private set; }= discordId;
+    public string? DiscordId { get; private set; } = discordId;
+
+    [JsonProperty("banned")]
+    public bool Banned { get; private set; } = banned;
     
     [JsonProperty("division")]
     public DivisionInfo Division { get; private set; } = DivisionInfo.GetDivisionFromMmr(mmr);
