@@ -40,7 +40,7 @@ public class ConnectedClient : IDisposable
             {
                 if (!IsConnectionAlive)
                 {
-                    DisconnectClient();
+                    Disconnect();
                     _logger.Info($"{UserInfo.Username} ({UserInfo.UserId}) disconnected");
                     return;
                 }
@@ -66,13 +66,15 @@ public class ConnectedClient : IDisposable
         catch (Exception e)
         {
             _logger.Error(e);
-            DisconnectClient();
+            Disconnect();
         }
     }
 
-    private void DisconnectClient()
+    public virtual void Disconnect()
     {
-        Disconnect();
+        _listenToClient = false;
+        _client.Close();
+        
         OnDisconnected?.Invoke(this);
     }
 
@@ -104,7 +106,7 @@ public class ConnectedClient : IDisposable
                 OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new Exception("Could not parse score submission packet!"), this);
                 break;
             default:
-                DisconnectClient();
+                Disconnect();
                 throw new Exception("Unknown packet type!");
         }
     }
@@ -114,14 +116,8 @@ public class ConnectedClient : IDisposable
         await _client.GetStream().WriteAsync(packet.SerializeToBytes());
     }
 
-    public virtual void Disconnect()
-    {
-        _listenToClient = false;
-        _client.Close();
-    }
-
     public void Dispose()
     {
-        DisconnectClient();
+        Disconnect();
     }
 }

@@ -81,10 +81,10 @@ public class ConnectionManager : IDisposable
         }
     }
 
-    public void Stop()
+    private void Stop()
     {
         _isStarted = false;
-        _listener.Dispose();
+        _listener.Stop();
     }
 
     public void Dispose()
