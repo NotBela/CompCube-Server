@@ -124,18 +124,17 @@ public class UserData : Database
         return null;
     }
 
+    // fixed. i think
     public UserInfo[]? GetAroundUser(string userId)
     {
-        return [];
-        //TODO: FIX
-        // var users = GetAllUsers();
-        //
-        // if (users.All(i => i?.UserId != userId))
-        //     return null;
-        //
-        // var userIdx = users.FindIndex(i => i?.UserId == userId);
-        //
-        // return users.Slice(Math.Clamp(userIdx - 4, 0, users.Count), Math.Max(users.Count, users.Count)).ToArray();
+        var users = GetAllUsers().Where(i => !i.Banned).ToArray();
+
+        if (users.All(u => u.UserId != userId))
+            return null;
+        
+        var user = users.First(i => i.UserId == userId);
+
+        return users.SkipWhile(i => i.Rank + 5 > user.Rank).Take(Math.Min(10, users.Length)).ToArray();
     }
     
     public UserInfo[] GetLeaderboardRange(int start, int range)
