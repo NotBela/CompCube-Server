@@ -1,4 +1,6 @@
-﻿using LoungeSaber_Server.Models.Client;
+﻿using System.Configuration;
+using LoungeSaber_Server.Interfaces;
+using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Map;
 using LoungeSaber_Server.Models.Packets.UserPackets;
 using LoungeSaber_Server.SQL;
@@ -7,7 +9,7 @@ namespace LoungeSaber_Server.Gameplay.Match;
 
 public class VoteManager
 {
-    private readonly Random _random = new Random();
+    private readonly Random _random = new();
     
     private readonly MapData _mapData;
     
@@ -17,19 +19,39 @@ public class VoteManager
 
     public event Action<VotingMap>? OnMapDetermined;
     
-    public event Action<ConnectedClient, int>? OnClientVoted;
+    public event Action<IConnectedClient, int>? OnClientVoted;
 
-    public VoteManager(ConnectedClient playerOne, ConnectedClient playerTwo, MapData mapData)
+    private readonly Timer _timer;
+
+    private bool MapAlreadyDetermined { get; set; } = false;
+
+    public VoteManager(IConnectedClient playerOne, IConnectedClient playerTwo, MapData mapData)
     {
         _mapData = mapData;
 
         VotingOptions = GetRandomMapSelections(3);
         
+        _timer = new Timer(OnTimerElapsed, null, new TimeSpan(0, 0, 30), Timeout.InfiniteTimeSpan);
+        
         playerOne.OnUserVoted += OnUserVoted;
         playerTwo.OnUserVoted += OnUserVoted;
     }
 
-    private void OnUserVoted(VotePacket packet, ConnectedClient client)
+    private void OnTimerElapsed(object? _)
+    {
+        if (MapAlreadyDetermined) 
+            return;
+
+        if (_firstVote == null)
+        {
+            DetermineVote(VotingOptions[0]);
+            return;
+        }
+        
+        DetermineVote(_firstVote);
+    }
+
+    private void OnUserVoted(VotePacket packet, IConnectedClient client)
     {
         client.OnUserVoted -= OnUserVoted;
 
@@ -44,13 +66,20 @@ public class VoteManager
         var secondVote = VotingOptions[packet.VoteIndex];
 
         var selectedMap = _random.Next(0, 2);
-
+        
         if (selectedMap == 0)
         {
-            OnMapDetermined?.Invoke(_firstVote);
+            DetermineVote(_firstVote);
             return;
         }
-        OnMapDetermined?.Invoke(secondVote);
+        
+        DetermineVote(secondVote);
+    }
+
+    private void DetermineVote(VotingMap map)
+    {
+        OnMapDetermined?.Invoke(map);
+        MapAlreadyDetermined = true;
     }
 
     private VotingMap[] GetRandomMapSelections(int amount)

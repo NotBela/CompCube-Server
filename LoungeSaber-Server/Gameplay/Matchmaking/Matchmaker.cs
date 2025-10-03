@@ -39,7 +39,7 @@ public class Matchmaker : IMatchmaker
         ActiveMatches.Remove(match);
     }
 
-    public async void AddClientToPool(ConnectedClient client)
+    public async void AddClientToPool(IConnectedClient client)
     {
         try
         {

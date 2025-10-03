@@ -1,4 +1,5 @@
-﻿using LoungeSaber_Server.Logging;
+﻿using LoungeSaber_Server.Interfaces;
+using LoungeSaber_Server.Logging;
 using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.ClientData;
 using LoungeSaber_Server.Models.Map;
@@ -16,8 +17,8 @@ public class Match
     private readonly UserData _userData;
     private readonly Logger _logger;
     
-    public readonly ConnectedClient PlayerOne;
-    public readonly ConnectedClient PlayerTwo;
+    public readonly IConnectedClient PlayerOne;
+    public readonly IConnectedClient PlayerTwo;
 
     private readonly ScoreManager _scoreManager;
     private readonly VoteManager _voteManager;
@@ -25,7 +26,7 @@ public class Match
     private VotingMap? _selectedMap;
     
     public event Action<MatchResultsData, Match>? OnMatchEnded;
-    public event Action<ConnectedClient, int, string>? OnPlayerPunished;
+    public event Action<IConnectedClient, int, string>? OnPlayerPunished;
 
     private const int MmrLossOnDisconnect = 50;
 
@@ -33,7 +34,7 @@ public class Match
     
     private const int KFactor = 75;
 
-    public Match(ConnectedClient playerOne, ConnectedClient playerTwo, MatchLog matchLog, UserData userData, MapData mapData, Logger logger)
+    public Match(IConnectedClient playerOne, IConnectedClient playerTwo, MatchLog matchLog, UserData userData, MapData mapData, Logger logger)
     {
         _matchLog = matchLog;
         _userData = userData;
@@ -107,7 +108,7 @@ public class Match
         }
     }
 
-    private async void OnPlayerDisconnected(ConnectedClient client)
+    private async void OnPlayerDisconnected(IConnectedClient client)
     {
         try
         {
@@ -152,7 +153,7 @@ public class Match
         _userData.ApplyMmrChange(results.Loser.User, -results.MmrChange);
     }
 
-    private async void OnUserVoted(ConnectedClient client, int voteIdx)
+    private async void OnUserVoted(IConnectedClient client, int voteIdx)
     {
         try
         {
@@ -164,7 +165,7 @@ public class Match
         }
     }
 
-    private void OnScoreSubmitted(ScoreSubmissionPacket score, ConnectedClient client)
+    private void OnScoreSubmitted(ScoreSubmissionPacket score, IConnectedClient client)
     {
         client.OnScoreSubmission -= OnScoreSubmitted;
         client.OnDisconnected -= OnPlayerDisconnected;
@@ -190,5 +191,5 @@ public class Match
         });
     }
 
-    private ConnectedClient GetOppositeClient(ConnectedClient client) => client.UserInfo.UserId == PlayerOne.UserInfo.UserId ? PlayerTwo : PlayerOne;
+    private IConnectedClient GetOppositeClient(IConnectedClient client) => client.UserInfo.UserId == PlayerOne.UserInfo.UserId ? PlayerTwo : PlayerOne;
 }

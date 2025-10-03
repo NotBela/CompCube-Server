@@ -1,18 +1,14 @@
 ﻿using System.Timers;
+using LoungeSaber_Server.Interfaces;
 using Timer = System.Timers.Timer;
 
 namespace LoungeSaber_Server.Models.Client;
 
-public class MatchmakingClient
+public class MatchmakingClient(IConnectedClient client)
 {
-    public ConnectedClient Client { get; private set; }
+    public IConnectedClient Client { get; private set; } = client;
 
     public int MmrThreshold { get; private set; } = 100;
-    
-    public MatchmakingClient(ConnectedClient client)
-    {
-        Client = client;
-    }
 
     private void OnMmrThresholdClockElapsed(object? sender, ElapsedEventArgs e)
     {

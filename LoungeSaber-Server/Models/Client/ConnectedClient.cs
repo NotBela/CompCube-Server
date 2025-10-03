@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Text;
+using LoungeSaber_Server.Interfaces;
 using LoungeSaber_Server.Logging;
 using LoungeSaber_Server.Models.ClientData;
 using LoungeSaber_Server.Models.Packets;
@@ -8,19 +9,19 @@ using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Models.Client;
 
-public class ConnectedClient : IDisposable
+public class ConnectedClient : IConnectedClient, IDisposable
 {
     private readonly Logger _logger;
     
     private readonly TcpClient _client;
-    
-    public readonly UserInfo UserInfo;
 
     private bool _listenToClient = true;
     
-    public event Action<VotePacket, ConnectedClient>? OnUserVoted;
-    public event Action<ScoreSubmissionPacket, ConnectedClient>? OnScoreSubmission;
-    public event Action<ConnectedClient>? OnDisconnected; 
+    public event Action<VotePacket, IConnectedClient>? OnUserVoted;
+    public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
+    public event Action<IConnectedClient>? OnDisconnected;
+
+    public UserInfo UserInfo { get; }
 
     public ConnectedClient(TcpClient client, UserInfo userInfo, Logger logger)
     {
@@ -32,7 +33,7 @@ public class ConnectedClient : IDisposable
         listenerThread.Start();
     }
 
-    protected virtual void ListenToClient()
+    private void ListenToClient()
     {
         try
         {
@@ -70,7 +71,7 @@ public class ConnectedClient : IDisposable
         }
     }
 
-    public virtual void Disconnect()
+    public void Disconnect()
     {
         _listenToClient = false;
         _client.Close();
@@ -95,7 +96,7 @@ public class ConnectedClient : IDisposable
         }
     }
 
-    protected void ProcessRecievedPacket(UserPacket packet)
+    private void ProcessRecievedPacket(UserPacket packet)
     {
         switch (packet.PacketType)
         {
@@ -111,7 +112,7 @@ public class ConnectedClient : IDisposable
         }
     }
 
-    public virtual async Task SendPacket(ServerPacket packet)
+    public async Task SendPacket(ServerPacket packet)
     {
         await _client.GetStream().WriteAsync(packet.SerializeToBytes());
     }

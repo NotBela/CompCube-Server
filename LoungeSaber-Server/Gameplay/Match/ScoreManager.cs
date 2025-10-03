@@ -1,4 +1,5 @@
-﻿using LoungeSaber_Server.Models.Client;
+﻿using LoungeSaber_Server.Interfaces;
+using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.ClientData;
 using LoungeSaber_Server.Models.Map;
 using LoungeSaber_Server.Models.Match;
@@ -12,13 +13,13 @@ public class ScoreManager
 
     private readonly List<MatchScore> _matchScores = [];
     
-    public ScoreManager(ConnectedClient playerOne, ConnectedClient playerTwo)
+    public ScoreManager(IConnectedClient playerOne, IConnectedClient playerTwo)
     {
         playerOne.OnScoreSubmission += OnScoreSubmitted;
         playerTwo.OnScoreSubmission += OnScoreSubmitted;
     }
 
-    private void OnScoreSubmitted(ScoreSubmissionPacket scorePacket, ConnectedClient client)
+    private void OnScoreSubmitted(ScoreSubmissionPacket scorePacket, IConnectedClient client)
     {
         client.OnScoreSubmission -= OnScoreSubmitted;
 

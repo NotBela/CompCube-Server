@@ -27,13 +27,13 @@ public class DebugMatchmaker : IMatchmaker, IDisposable
     
     public event Action<Match.Match>? OnMatchStarted;
 
-    public async void AddClientToPool(ConnectedClient client)
+    public async void AddClientToPool(IConnectedClient client)
     {
         try
         {
             await Task.Delay(100);
         
-            var match = new Match.Match(client, new DummyConnectedClient(_userData.GetUserById("0") ?? throw new Exception(), _logger), _matchLog, _userData, _mapData, _logger); 
+            var match = new Match.Match(client, new DummyConnectedClient(_userData.GetUserById("0") ?? throw new Exception("Could not find debug user data!")), _matchLog, _userData, _mapData, _logger); 
             OnMatchStarted?.Invoke(match);
             await match.StartMatch();
         }

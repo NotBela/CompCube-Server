@@ -7,5 +7,5 @@ public interface IMatchmaker
 {
     public event Action<Match>? OnMatchStarted;
     
-    public void AddClientToPool(ConnectedClient client);
+    public void AddClientToPool(IConnectedClient client);
 }
