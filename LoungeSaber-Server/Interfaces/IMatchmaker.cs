@@ -5,6 +5,8 @@ namespace LoungeSaber_Server.Interfaces;
 
 public interface IMatchmaker
 {
+    public string QueueName { get; }
+    
     public event Action<Match>? OnMatchStarted;
     
     public void AddClientToPool(IConnectedClient client);

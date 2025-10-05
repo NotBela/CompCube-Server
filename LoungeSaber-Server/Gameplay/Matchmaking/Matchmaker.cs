@@ -20,16 +20,15 @@ public class Matchmaker : IMatchmaker
     
     public readonly List<Match.Match> ActiveMatches = [];
 
+    public string QueueName => "standard";
     public event Action<Match.Match>? OnMatchStarted;
 
-    public Matchmaker(UserData userData, MapData mapData, MatchLog matchLog, ConnectionManager connectionmanager, Logger logger)
+    public Matchmaker(UserData userData, MapData mapData, MatchLog matchLog, Logger logger)
     {
         _userData = userData;
         _mapData = mapData;
         _matchLog = matchLog;
         _logger = logger;
-        
-        connectionmanager.OnClientJoined += AddClientToPool;
     }
 
     private void OnMatchEnded(MatchResultsData results, Match.Match match)

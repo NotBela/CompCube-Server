@@ -41,19 +41,19 @@ public class DivisionInfo(DivisionInfo.DivisionName division, int subDivision, s
             return new DivisionInfo(DivisionName.GrandMaster, 1, "#950606", true);
         
         throw new Exception("Invalid MMR range!");
-        
-        bool IsInRangeOfValue(int lowerRange, int value, int upperRange) => Math.Clamp(value, lowerRange, upperRange) == value;
-
-        int GetSubDivision(int mmrValue, int mmrSpan)
-        {
-            if (mmrValue == 0 || mmrSpan == 0)
-                return 1;
-
-            var value = (int) ((double) mmrValue / mmrSpan * 4) + 1;
-            
-            return Math.Clamp(value, 1, 4);
-        }
     }
+    
+    private static int GetSubDivision(int mmrValue, int mmrSpan)
+    {
+        if (mmrValue == 0 || mmrSpan == 0)
+            return 1;
+
+        var value = (int) ((double) mmrValue / mmrSpan * 4) + 1;
+            
+        return Math.Clamp(value, 1, 4);
+    }
+    
+    private static bool IsInRangeOfValue(int lowerRange, int value, int upperRange) => Math.Clamp(value, lowerRange, upperRange) == value;
 
     public enum DivisionName
     {

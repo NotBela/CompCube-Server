@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using LoungeSaber_Server.Interfaces;
 using LoungeSaber_Server.Logging;
 using LoungeSaber_Server.Models.Client;
 using LoungeSaber_Server.Models.Packets;
@@ -14,6 +15,7 @@ public class ConnectionManager : IDisposable
 {
     private readonly UserData _userData;
     private readonly Logger _logger;
+    private readonly IServiceProvider _serviceProvider;
     
     private readonly TcpListener _listener = new(IPAddress.Any, 8008);
 
@@ -23,10 +25,11 @@ public class ConnectionManager : IDisposable
 
     public event Action<ConnectedClient>? OnClientJoined;
 
-    public ConnectionManager(UserData userData, Logger logger)
+    public ConnectionManager(UserData userData, Logger logger, IServiceProvider serviceProvider)
     {
         _userData = userData;
         _logger = logger;
+        _serviceProvider = serviceProvider;
         
         _listenForClientsThread = new Thread(ListenForClients);
         Start();
@@ -62,11 +65,20 @@ public class ConnectionManager : IDisposable
 
                     var connectedClient = new ConnectedClient(client, _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName), _logger);
 
-                    await connectedClient.SendPacket(new JoinResponsePacket(true, ""));
-                  
-                    _logger.Info($"User {connectedClient.UserInfo.Username} ({connectedClient.UserInfo.UserId}) joined the matchmaking pool");
+                    var targetMatchmaker = _serviceProvider.GetServices<IMatchmaker>().FirstOrDefault(i => i.QueueName == packet.Queue);
+
+                    if (targetMatchmaker == null)
+                    {
+                        await connectedClient.SendPacket(new JoinResponsePacket(false, "Invalid Queue"));
+                        connectedClient.Disconnect();
+                        continue;
+                    }
                     
-                    OnClientJoined?.Invoke(connectedClient);
+                    await connectedClient.SendPacket(new JoinResponsePacket(true, "success"));
+                    
+                    targetMatchmaker.AddClientToPool(connectedClient);
+                  
+                    _logger.Info($"User {connectedClient.UserInfo.Username} ({connectedClient.UserInfo.UserId}) joined queue {targetMatchmaker.QueueName}");
                 }
                 catch (Exception e)
                 {

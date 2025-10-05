@@ -24,7 +24,8 @@ public class DebugMatchmaker : IMatchmaker, IDisposable
 
         _connectionManager.OnClientJoined += AddClientToPool;
     }
-    
+
+    public string QueueName => "debug";
     public event Action<Match.Match>? OnMatchStarted;
 
     public async void AddClientToPool(IConnectedClient client)

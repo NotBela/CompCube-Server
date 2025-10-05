@@ -10,11 +10,15 @@ public class JoinRequestPacket : UserPacket
     [JsonProperty("userId")]
     public string UserId { get; private set; }
 
+    [JsonProperty("queue")]
+    public string Queue { get; private set; }
+    
     [JsonConstructor]
-    public JoinRequestPacket(string userName, string userId)
+    public JoinRequestPacket(string userName, string userId, string queue)
     {
         UserName = userName;
         UserId = userId;
+        Queue = queue;
     }
 
     public override UserPacketTypes PacketType =>  UserPacketTypes.JoinRequest;

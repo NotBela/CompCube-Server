@@ -32,5 +32,5 @@ public class ScoreSubmissionPacket : UserPacket
         FullCombo = fullCombo;
     }
 
-    public Score GetScore() => new Score(Score, (float) Score / MaxScore, ProMode, MissCount, FullCombo);
+    public Score GetScore() => new(Score, (float) Score / MaxScore, ProMode, MissCount, FullCombo);
 }
