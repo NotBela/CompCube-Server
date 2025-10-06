@@ -65,7 +65,7 @@ public class Program
         if (Program.Debug)
             services.AddSingleton<IQueue, DebugQueue>();
         else 
-            services.AddSingleton<IQueue, Queue>();
+            services.AddSingleton<IQueue, StandardQueue>();
         
         services.AddSingleton<MatchCompletedMessageManager>();
         services.AddSingleton<MatchInfoMessageFormatter>();

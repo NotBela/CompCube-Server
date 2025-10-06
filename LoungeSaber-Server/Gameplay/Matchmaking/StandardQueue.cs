@@ -9,7 +9,7 @@ using Timer = System.Timers.Timer;
 
 namespace LoungeSaber_Server.Gameplay.Matchmaking;
 
-public class Queue : IQueue
+public class StandardQueue : IQueue
 {
     private readonly UserData _userData;
     private readonly MapData _mapData;
@@ -23,7 +23,7 @@ public class Queue : IQueue
     public string QueueName => "standard";
     public event Action<Match.Match>? OnMatchStarted;
 
-    public Queue(UserData userData, MapData mapData, MatchLog matchLog, Logger logger)
+    public StandardQueue(UserData userData, MapData mapData, MatchLog matchLog, Logger logger)
     {
         _userData = userData;
         _mapData = mapData;
