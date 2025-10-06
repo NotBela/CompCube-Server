@@ -1,21 +1,26 @@
 ﻿using LoungeSaber_Server.Logging;
 using LoungeSaber_Server.Models.Match;
+using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Gameplay.Events;
 
-public class EventManager
+public class EventManager : IDisposable
 {
     private readonly Logger _logger;
     
     public event Action<MatchResultsData, Match.Match>? EventMatchEnded;
     
-    private List<Event> _events = [];
+    private List<Event> _events;
     
     public IReadOnlyList<Event> ActiveEvents => _events;
+    
+    private static string PathToEventsFile => Path.Combine(Directory.GetCurrentDirectory(), "events.json");
     
     public EventManager(Logger logger)
     {
         _logger = logger;
+        
+        _events = ReadEventsFromFile().Select(i => new Event(i)).ToList();
     }
 
     public void AddEvent(Event e)
@@ -37,5 +42,30 @@ public class EventManager
     }
 
     private void OnEventMatchEnded(MatchResultsData data, Match.Match match) => EventMatchEnded?.Invoke(data, match);
-    
+
+    private void SaveEventsToFile()
+    {
+        File.WriteAllText(PathToEventsFile, JsonConvert.SerializeObject(_events));
+    }
+
+    private EventData[] ReadEventsFromFile()
+    {
+        if (!File.Exists(PathToEventsFile))
+            return [];
+        
+        var deserializedEventData = JsonConvert.DeserializeObject<EventData[]>(File.ReadAllText(PathToEventsFile));
+
+        if (deserializedEventData == null)
+        {
+            _logger.Info("Could not read events from file.");
+            return [];
+        }
+        
+        return deserializedEventData;
+    }
+
+    public void Dispose()
+    {
+        SaveEventsToFile();
+    }
 }

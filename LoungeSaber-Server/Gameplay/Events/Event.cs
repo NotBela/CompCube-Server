@@ -3,9 +3,11 @@ using LoungeSaber_Server.Models.Match;
 
 namespace LoungeSaber_Server.Gameplay.Events;
 
-public class Event(EventData data) : IQueue
+public class Event(EventData eventData) : IQueue
 {
-    public string QueueName => data.Name;
+    public string QueueName => eventData.Name;
+    
+    public EventData EventData => eventData;
     
     public event Action<MatchResultsData, Match.Match>? QueueMatchEnded;
 

@@ -82,6 +82,7 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
+        services.AddSingleton<EventApiController>();
 
         // force instantiation of connectionmanager as non lazy
         // lazy fucks
