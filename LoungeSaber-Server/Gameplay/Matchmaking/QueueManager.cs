@@ -9,8 +9,6 @@ public class QueueManager
     private readonly IQueue[] _staticQueues;
     
     public event Action<MatchResultsData, Match.Match>? OnAnyMatchEnded;
-
-    public event Action OnQueueManagerInitialized;
     
     public QueueManager(IEnumerable<IQueue> staticQueues, Logger logger)
     {
