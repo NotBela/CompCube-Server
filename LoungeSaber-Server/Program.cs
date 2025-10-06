@@ -3,6 +3,7 @@ using LoungeSaber_Server.BeatSaverApi;
 using LoungeSaber_Server.Discord;
 using LoungeSaber_Server.Discord.Commands;
 using LoungeSaber_Server.Discord.Events;
+using LoungeSaber_Server.Gameplay.Events;
 using LoungeSaber_Server.Gameplay.Matchmaking;
 using LoungeSaber_Server.Interfaces;
 using LoungeSaber_Server.Logging;
@@ -64,6 +65,7 @@ public class Program
         services.AddSingleton<ConnectionManager>();
         
         services.AddSingleton<QueueManager>();
+        services.AddSingleton<EventManager>();
         
         services.AddSingleton<IQueue, DebugQueue>();
         services.AddSingleton<IQueue, StandardQueue>();

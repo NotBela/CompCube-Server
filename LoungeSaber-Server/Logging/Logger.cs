@@ -1,9 +1,23 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.IO.Compression;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace LoungeSaber_Server.Logging;
 
 public class Logger
 {
+    private string LogsPath => Path.Combine(typeof(Program).Assembly.Location, "Logs");
+    
+    public Logger()
+    {
+        Directory.CreateDirectory(LogsPath);
+
+        if (File.Exists(Path.Combine(LogsPath, "latest.log")))
+        {
+            // var zipFile = new 
+        }
+    }
+
     public void Info(string text, [CallerFilePath] string callerPath = "") => Log(text, callerPath, ConsoleColor.White);
 
     public void Error(string text, [CallerFilePath] string callerPath = "") => Log(text, callerPath, ConsoleColor.Red);
