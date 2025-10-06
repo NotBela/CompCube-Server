@@ -18,15 +18,13 @@ public class Program
 {
     public static bool Debug { get; private set; } = false;
         
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         if (args.Contains("--debug"))
             Debug = true;
             
         var builder = WebApplication.CreateBuilder(args);
-
-        InstallBindings(builder.Services);
-            
+        
         builder.Services.AddDiscordGateway().AddApplicationCommands();
 
         builder.Services.AddControllers();
@@ -47,8 +45,10 @@ public class Program
         host.AddModules(typeof(Program).Assembly);
 
         host.UseGatewayHandlers();
+        
+        InstallBindings(builder.Services);
 
-        await host.RunAsync();
+        host.Run();
     }
         
     private static void InstallBindings(IServiceCollection services)
@@ -60,12 +60,13 @@ public class Program
         services.AddSingleton<UserData>();
 
         services.AddSingleton<ServerStatusManager>();
+        
         services.AddSingleton<ConnectionManager>();
-
-        if (Program.Debug)
-            services.AddSingleton<IQueue, DebugQueue>();
-        else 
-            services.AddSingleton<IQueue, StandardQueue>();
+        
+        services.AddSingleton<QueueManager>();
+        
+        services.AddSingleton<IQueue, DebugQueue>();
+        services.AddSingleton<IQueue, StandardQueue>();
         
         services.AddSingleton<MatchCompletedMessageManager>();
         services.AddSingleton<MatchInfoMessageFormatter>();
@@ -79,5 +80,9 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
+
+        // force instantiation of connectionmanager as non lazy
+        // lazy fucks
+        services.BuildServiceProvider().GetRequiredService<ConnectionManager>();
     }
 }

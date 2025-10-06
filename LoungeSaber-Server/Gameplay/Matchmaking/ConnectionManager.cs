@@ -15,27 +15,25 @@ public class ConnectionManager : IDisposable
 {
     private readonly UserData _userData;
     private readonly Logger _logger;
-    private readonly IServiceProvider _serviceProvider;
+    private readonly QueueManager _queueManager;
     
     private readonly TcpListener _listener = new(IPAddress.Any, 8008);
 
     private readonly Thread _listenForClientsThread;
     
     private bool _isStarted = false;
-
-    public event Action<ConnectedClient>? OnClientJoined;
-
-    public ConnectionManager(UserData userData, Logger logger, IServiceProvider serviceProvider)
+    
+    public ConnectionManager(UserData userData, Logger logger, QueueManager queueManager)
     {
         _userData = userData;
         _logger = logger;
-        _serviceProvider = serviceProvider;
+        _queueManager = queueManager;
         
         _listenForClientsThread = new Thread(ListenForClients);
         Start();
     }
-    
-    private void Start()
+
+    public void Start()
     {
         _listener.Start();
         _isStarted = true;
@@ -65,7 +63,7 @@ public class ConnectionManager : IDisposable
 
                     var connectedClient = new ConnectedClient(client, _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName), _logger);
 
-                    var targetMatchmaker = _serviceProvider.GetServices<IQueue>().FirstOrDefault(i => i.QueueName == packet.Queue);
+                    var targetMatchmaker = _queueManager.GetQueueFromName(packet.Queue);
 
                     if (targetMatchmaker == null)
                     {

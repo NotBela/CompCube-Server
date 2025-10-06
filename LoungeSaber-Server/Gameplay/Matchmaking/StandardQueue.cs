@@ -21,7 +21,8 @@ public class StandardQueue : IQueue
     public readonly List<Match.Match> ActiveMatches = [];
 
     public string QueueName => "standard";
-    public event Action<Match.Match>? OnMatchStarted;
+    
+    public event Action<MatchResultsData, Match.Match>? QueueMatchEnded;
 
     public StandardQueue(UserData userData, MapData mapData, MatchLog matchLog, Logger logger)
     {
@@ -34,6 +35,8 @@ public class StandardQueue : IQueue
     private void OnMatchEnded(MatchResultsData results, Match.Match match)
     {
         match.OnMatchEnded -= OnMatchEnded;
+        
+        QueueMatchEnded?.Invoke(results, match);
 
         ActiveMatches.Remove(match);
     }
@@ -50,7 +53,8 @@ public class StandardQueue : IQueue
             var match = new Match.Match(_clientPool[0].Client, _clientPool[1].Client, _matchLog, _userData, _mapData, _logger);
             _clientPool.Clear();
             await match.StartMatch();
-            OnMatchStarted?.Invoke(match);
+
+            match.OnMatchEnded += OnMatchEnded;
         }
         catch (Exception e)
         {

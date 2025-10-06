@@ -1,13 +1,14 @@
 ﻿using LoungeSaber_Server.Gameplay.Match;
 using LoungeSaber_Server.Models.Client;
+using LoungeSaber_Server.Models.Match;
 
 namespace LoungeSaber_Server.Interfaces;
 
 public interface IQueue
 {
     public string QueueName { get; }
-    
-    public event Action<Match>? OnMatchStarted;
+
+    public event Action<MatchResultsData, Match> QueueMatchEnded;
     
     public void AddClientToPool(IConnectedClient client);
 }
