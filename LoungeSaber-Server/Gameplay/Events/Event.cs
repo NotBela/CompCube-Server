@@ -6,7 +6,7 @@ namespace LoungeSaber_Server.Gameplay.Events;
 
 public class Event(EventData eventData) : IQueue
 {
-    public string QueueName => eventData.Name;
+    public string QueueName => eventData.EventName;
     
     public EventData EventData => eventData;
     
