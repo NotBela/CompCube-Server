@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic.CompilerServices;
+﻿using Microsoft.OpenApi.Extensions;
+using Microsoft.VisualBasic.CompilerServices;
 using Newtonsoft.Json;
 
 namespace LoungeSaber_Server.Models.ClientData;
@@ -6,7 +7,7 @@ namespace LoungeSaber_Server.Models.ClientData;
 [method: JsonConstructor]
 public class DivisionInfo(DivisionInfo.DivisionName division, int subDivision, string colorCode, bool glow)
 {
-    [JsonProperty("division")] public DivisionName Division { get; private set; } = division;
+    [JsonProperty("division")] public string Division { get; private set; } = division.ToString();
     [JsonProperty("subDivision")] public int SubDivision { get; private set; } = subDivision;
     [JsonProperty("color")] public string Color { get; private set; } = colorCode;
     [JsonProperty("glow")] public bool Glow { get; private set; } = glow;

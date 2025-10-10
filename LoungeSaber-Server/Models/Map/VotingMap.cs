@@ -11,9 +11,10 @@ public class VotingMap
     public readonly DifficultyType Difficulty;
 
     [JsonProperty("category")]
-    public readonly CategoryType Category;
+    public readonly string Category;
 
-    public VotingMap(string hash, DifficultyType difficulty, CategoryType category)
+    [JsonConstructor]
+    public VotingMap(string hash, DifficultyType difficulty, string category)
     {
         Hash = hash;
         Difficulty = difficulty;

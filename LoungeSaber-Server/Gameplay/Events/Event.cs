@@ -16,6 +16,8 @@ public class Event(EventData eventData) : IQueue
 
     private readonly List<IConnectedClient> _connectedClients = [];
     
+    public int ClientCount => _connectedClients.Count;
+    
     public void AddClientToPool(IConnectedClient client)
     {
         _connectedClients.Add(client);
@@ -37,7 +39,7 @@ public class Event(EventData eventData) : IQueue
 
     public void CreateTournamentBracket()
     {
-        
+        throw new NotImplementedException();
     }
 
     private void SendPacketToAllClients(ServerPacket packet)
