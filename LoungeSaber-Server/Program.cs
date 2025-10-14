@@ -1,5 +1,5 @@
+using LoungeSaber_Server.Api.BeatSaver;
 using LoungeSaber_Server.Api.Controllers;
-using LoungeSaber_Server.BeatSaverApi;
 using LoungeSaber_Server.Discord;
 using LoungeSaber_Server.Discord.Commands;
 using LoungeSaber_Server.Discord.Events;

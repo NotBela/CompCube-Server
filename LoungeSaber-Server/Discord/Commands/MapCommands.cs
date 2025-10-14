@@ -1,4 +1,4 @@
-﻿using LoungeSaber_Server.BeatSaverApi;
+﻿using LoungeSaber_Server.Api.BeatSaver;
 using LoungeSaber_Server.Models.Map;
 using LoungeSaber_Server.SQL;
 using NetCord.Rest;

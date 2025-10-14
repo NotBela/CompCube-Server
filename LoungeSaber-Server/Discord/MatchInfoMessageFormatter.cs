@@ -1,5 +1,5 @@
 ﻿using System.Globalization;
-using LoungeSaber_Server.BeatSaverApi;
+using LoungeSaber_Server.Api.BeatSaver;
 using LoungeSaber_Server.Models.Match;
 using NetCord;
 using NetCord.Rest;
