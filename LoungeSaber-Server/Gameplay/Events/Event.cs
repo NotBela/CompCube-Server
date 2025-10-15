@@ -25,7 +25,7 @@ public class Event(EventData eventData) : IQueue
         client.OnDisconnected -= OnDisconnected;
     }
 
-    void OnDisconnected(IConnectedClient c)
+    private void OnDisconnected(IConnectedClient c)
     {
         c.OnDisconnected -= OnDisconnected;
             
