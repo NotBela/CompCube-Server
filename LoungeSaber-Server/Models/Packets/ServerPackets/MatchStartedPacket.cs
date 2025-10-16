@@ -1,26 +1,28 @@
-﻿using LoungeSaber_Server.Models.Map;
+﻿using LoungeSaber_Server.Models.ClientData;
+using LoungeSaber_Server.Models.Map;
 using Newtonsoft.Json;
 
-namespace LoungeSaber_Server.Models.Packets.ServerPackets;
-
-public class MatchStartedPacket : ServerPacket
+namespace LoungeSaber_Server.Models.Packets.ServerPackets
 {
-    public override ServerPacketTypes PacketType => ServerPacketTypes.MatchStarted;
-
-    [JsonProperty("map")]
-    public readonly VotingMap MapSelected;
-
-    [JsonProperty("transitionToGameTime")]
-    public readonly DateTime TransitionToGameTime;
-    
-    [JsonProperty("startingTime")]
-    public readonly DateTime StartingTime;
-
-    [JsonConstructor]
-    public MatchStartedPacket(VotingMap mapSelected, DateTime transitionToGameTime, DateTime startingTime)
+    [method: JsonConstructor]
+    public class MatchStartedPacket(
+        VotingMap mapSelected,
+        int transitionToGameWait,
+        int startingWait,
+        UserInfo opponent) : ServerPacket
     {
-        MapSelected = mapSelected;
-        TransitionToGameTime = transitionToGameTime;
-        StartingTime = startingTime;
+        public override ServerPacketTypes PacketType => ServerPacketTypes.MatchStarted;
+
+        [JsonProperty("map")]
+        public readonly VotingMap MapSelected = mapSelected;
+
+        [JsonProperty("transitionToGameTime")]
+        public readonly int TransitionToGameWait = transitionToGameWait;
+    
+        [JsonProperty("startingTime")]
+        public readonly int StartingWait = startingWait;
+
+        [JsonProperty("opponent")] 
+        public readonly UserInfo Opponent = opponent;
     }
 }

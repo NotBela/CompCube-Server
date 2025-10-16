@@ -19,6 +19,6 @@ public abstract class ServerPacket : Packet
         MatchResults,
         PrematureMatchEnd,
         EventStarted,
-        EventEnded
+        OutOfEvent
     }
 }

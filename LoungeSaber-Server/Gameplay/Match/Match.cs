@@ -76,8 +76,8 @@ public class Match
 
             await Task.Delay(3000);
 
-            SendToBothClients(new MatchStartedPacket(_selectedMap, DateTime.UtcNow.AddSeconds(15),
-                DateTime.UtcNow.AddSeconds(25)));
+            await PlayerOne.SendPacket(new MatchStartedPacket(_selectedMap, 15, 10, PlayerTwo.UserInfo));
+            await PlayerTwo.SendPacket(new MatchStartedPacket(_selectedMap, 15, 10, PlayerOne.UserInfo));
         }
         catch (Exception e)
         {
