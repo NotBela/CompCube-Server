@@ -32,13 +32,13 @@ public class DivisionInfo(DivisionInfo.DivisionName division, int subDivision, s
             return new DivisionInfo(DivisionName.Diamond, GetSubDivision(mmr - 4000, 1500), "#4EE2EC", false);
 
         if (IsInRangeOfValue(6500, mmr, 7999))
-            return new DivisionInfo(DivisionName.Emerald, GetSubDivision(mmr - 6500, 1500), "#50C878", false);
+            return new DivisionInfo(DivisionName.Iridescent, GetSubDivision(mmr - 6500, 1500), "#50C878", false);
 
         if (IsInRangeOfValue(8000, mmr, 9999))
-            return new DivisionInfo(DivisionName.Master, GetSubDivision(mmr - 8000, 2000), "#950606", false);
+            return new DivisionInfo(DivisionName.Luminal, GetSubDivision(mmr - 8000, 2000), "#950606", false);
         
         if (IsInRangeOfValue(10000, mmr, int.MaxValue))
-            return new DivisionInfo(DivisionName.GrandMaster, 1, "#950606", true);
+            return new DivisionInfo(DivisionName.Superluminal, 1, "#950606", true);
         
         throw new Exception("Invalid MMR range!");
     }
@@ -63,8 +63,8 @@ public class DivisionInfo(DivisionInfo.DivisionName division, int subDivision, s
         Gold,
         Platinum,
         Diamond,
-        Emerald,
-        Master,
-        GrandMaster
+        Iridescent,
+        Luminal,
+        Superluminal
     }
 }
