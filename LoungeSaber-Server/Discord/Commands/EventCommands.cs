@@ -29,6 +29,12 @@ public class EventCommands(EventManager eventManager) : ApplicationCommandModule
         if (e == null)
             return $"Event {eventName} not found!";
         
+        if (e.ClientCount == 0)
+            return "Cannot start: Player count must be above 0!";
+
+        if (e.ClientCount % 2 == 1)
+            return "Cannot start: Player count must be even!";
+        
         e.StartEvent();
         return $"Event {eventName} started with {e.ClientCount} players!";
     }
