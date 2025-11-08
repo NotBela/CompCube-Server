@@ -1,5 +1,6 @@
 ﻿using System.Data.SQLite;
 using CompCube_Models.Models.ClientData;
+using LoungeSaber_Server.Divisions;
 
 namespace LoungeSaber_Server.SQL;
 
@@ -68,7 +69,7 @@ public class UserData : Database
 
         var banned = reader.GetBoolean(5);
             
-        return new UserInfo(userName, userId, mmr, badge, rank, discordId, banned);
+        return new UserInfo(userName, userId, mmr, DivisionManager.GetDivisionFromMmr(mmr), badge, rank, discordId, banned);
     }
 
     public List<UserInfo> GetAllUsers()
