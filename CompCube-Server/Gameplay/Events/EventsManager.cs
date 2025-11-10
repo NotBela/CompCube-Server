@@ -1,5 +1,6 @@
 ﻿using CompCube_Models.Models.Events;
 using CompCube_Models.Models.Match;
+using CompCube_Server.Discord.Events;
 using CompCube_Server.Logging;
 using Newtonsoft.Json;
 
@@ -8,8 +9,7 @@ namespace CompCube_Server.Gameplay.Events;
 public class EventsManager
 {
     private readonly Logger _logger;
-    
-    public event Action<MatchResultsData, Match.Match>? EventMatchEnded;
+    private readonly EventMessageManager _eventMessageManager;
     
     private readonly List<Event> _events;
     
@@ -17,11 +17,12 @@ public class EventsManager
     
     private static string PathToEventsFile => Path.Combine(Directory.GetCurrentDirectory(), "events.json");
     
-    public EventsManager(Logger logger)
+    public EventsManager(Logger logger, EventMessageManager eventMessageManager)
     {
         _logger = logger;
+        _eventMessageManager = eventMessageManager;
         
-        _events = ReadEventsFromFile().Select(i => new Event(i)).ToList();
+        _events = ReadEventsFromFile().Select(i => new Event(i, eventMessageManager)).ToList();
 
         AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
         {
@@ -31,8 +32,6 @@ public class EventsManager
 
     public void AddEvent(Event e)
     {
-        e.QueueMatchEnded += OnEventMatchEnded;
-        
         _events.Add(e);
         
         _logger.Info($"Event {e.QueueName} has been created.");
@@ -40,15 +39,11 @@ public class EventsManager
 
     public void RemoveEvent(Event e)
     {
-        e.QueueMatchEnded -= OnEventMatchEnded;
-        
         _events.Remove(e);
         
         _logger.Info($"Event {e.QueueName} has been removed.");
     }
-
-    private void OnEventMatchEnded(MatchResultsData data, Match.Match match) => EventMatchEnded?.Invoke(data, match);
-
+    
     private void SaveEventsToFile()
     {
         File.WriteAllText(PathToEventsFile, JsonConvert.SerializeObject(_events));

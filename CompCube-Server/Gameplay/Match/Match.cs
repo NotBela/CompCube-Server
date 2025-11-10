@@ -4,6 +4,7 @@ using CompCube_Models.Models.Match;
 using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
+using CompCube_Server.Discord.Events;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.SQL;
@@ -16,6 +17,7 @@ public class Match
     private readonly UserData _userData;
     private readonly MapData _mapData;
     private readonly Logger _logger;
+    private readonly MatchMessageManager _matchMessageManager;
     
     private IConnectedClient _playerOne;
     private IConnectedClient _playerTwo;
@@ -36,12 +38,13 @@ public class Match
     
     private const int KFactor = 75;
 
-    public Match(MatchLog matchLog, UserData userData, MapData mapData, Logger logger)
+    public Match(MatchLog matchLog, UserData userData, MapData mapData, Logger logger, MatchMessageManager matchMessageManager)
     {
         _matchLog = matchLog;
         _userData = userData;
         _logger = logger;
         _mapData = mapData;
+        _matchMessageManager = matchMessageManager;
     }
 
     public async Task StartMatch(MatchSettings settings, IConnectedClient playerOne, IConnectedClient playerTwo)
@@ -144,10 +147,15 @@ public class Match
         _playerOne.Disconnect();
         _playerTwo.Disconnect();
         
-        _matchLog.AddMatchToTable(results);
         OnMatchEnded?.Invoke(results, this);
 
         _userData.ApplyMmrChange(results.Winner.User, results.MmrChange);
+        
+        if (_matchSettings.LogMatch)
+        {
+            _matchLog.AddMatchToTable(results);
+            _matchMessageManager.PostMatchResults(results);
+        }
         
         if (results.Premature)
         {
