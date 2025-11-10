@@ -68,8 +68,13 @@ public class UserData : Database
             discordId = reader.GetString(4);
 
         var banned = reader.GetBoolean(5);
+
+        var wins = reader.GetInt32(6);
+        var losses = reader.GetInt32(7);
+        var winstreak = reader.GetInt32(8);
+        var highestWinstreak = reader.GetInt32(9);
             
-        return new UserInfo(userName, userId, mmr, DivisionManager.GetDivisionFromMmr(mmr), badge, rank, discordId, banned);
+        return new UserInfo(userName, userId, mmr, DivisionManager.GetDivisionFromMmr(mmr), badge, rank, discordId, banned, wins, losses, winstreak, highestWinstreak);
     }
 
     public List<UserInfo> GetAllUsers()
@@ -185,7 +190,17 @@ public class UserData : Database
     private void CreateUserDataTable()
     {
         var dbCommand = Connection.CreateCommand();
-        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (id TEXT NOT NULL PRIMARY KEY, mmr INTEGER NOT NULL, username TEXT NOT NULL, badge TEXT, discordID TEXT UNIQUE, banned BOOLEAN NOT NULL)";
+        dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (" +
+                                "id TEXT NOT NULL PRIMARY KEY, " +
+                                "mmr INTEGER NOT NULL, " +
+                                "username TEXT NOT NULL, " +
+                                "badge TEXT, " +
+                                "discordID TEXT UNIQUE, " +
+                                "banned BOOLEAN NOT NULL, " +
+                                "wins INT NOT NULL, " +
+                                "losses INT NOT NULL, " +
+                                "winstreak INT NOT NULL, " +
+                                "highestWinstreak INT NOT NULL)";
         dbCommand.ExecuteNonQuery();
     }
 }

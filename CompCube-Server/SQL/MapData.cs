@@ -24,7 +24,7 @@ public class MapData(Logger logger) : Database
         command.CommandText = "INSERT INTO mapData VALUES (@hash, @difficulty, @category)";
         command.Parameters.AddWithValue("hash", votingMap.Hash);
         command.Parameters.AddWithValue("difficulty", votingMap.Difficulty.ToString());
-        command.Parameters.AddWithValue("category", votingMap.Category.ToString());
+        command.Parameters.AddWithValue("category", votingMap.Category);
 
         command.ExecuteNonQuery();
     }
