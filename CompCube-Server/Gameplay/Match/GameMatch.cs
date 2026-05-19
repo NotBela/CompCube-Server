@@ -74,7 +74,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
     {
         try
         {
-            await SendPacketToClientsAsync(new PlayerVotedPacket(vote.VoteIndex, client.UserInfo.UserId), null, [client]);
+            await SendPacketToClientsAsync(new PlayerVotedPacket(_currentRoundVoteManager?.Options[vote.VoteIndex]!), null, [client]);
         }
         catch (Exception e)
         {
