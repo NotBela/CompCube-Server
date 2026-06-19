@@ -196,6 +196,8 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         {
             rankingData.UpdateUserDataFromMatch(matchResultsData, mmrChange, _matchSettings.MmrPenaltyOnDisconnect);
         }
+        // wait before disconnecting clients so that player two wont disconnect before results are sent
+        await Task.Delay(500);
         
         Dispose();
     }
