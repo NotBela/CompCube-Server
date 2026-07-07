@@ -68,6 +68,8 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
 
     private async Task StartPickPhase()
     {
+        _cachedScore = null;
+        
         _currentRound++;
 
         var multiplierForThisRound = GetMultiplierFromRound(_currentRound);
@@ -151,7 +153,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         if (round == 2)
             return 1f;
 
-        return (float)round / 2;
+        return Math.Max((float)round / 2, 1f);
     }
 
     private int ComputeEloChange(UserInfo winner, UserInfo loser)
@@ -215,7 +217,7 @@ public class ClientManager
         
         _dealer.AddDiscarded(packet.Maps);
 
-        _availablePicks = _availablePicks.Concat(_dealer.PullNewCards(2)).Take(5).ToList();
+        _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
         OnClientFinishedDiscarding?.Invoke(this);
     }
 
