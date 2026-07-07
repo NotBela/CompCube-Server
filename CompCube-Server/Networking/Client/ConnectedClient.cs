@@ -45,7 +45,7 @@ public class ConnectedClient : IConnectedClient, IDisposable
                     return;
                 }
 
-                var buffer = new byte[1024];
+                var buffer = new byte[4096];
 
                 if (IsConnectionAlive)
                     _client.GetStream().Flush();
