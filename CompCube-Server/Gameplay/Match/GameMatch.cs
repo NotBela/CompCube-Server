@@ -12,7 +12,7 @@ using CompCube_Server.SQL;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchLog matchLog, IDiscordBot messageManager, RankingData rankingData) : IDisposable
+public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchLog matchLog, IDiscordBot messageManager, RankingData rankingData)
 {
     private MatchSettings _matchSettings;
 
@@ -22,6 +22,10 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
     private bool _firstClientAlreadyFinishedDiscarding = false;
 
     private bool _lastPickWasRed = false;
+
+    private Score? _cachedScore = null;
+
+    private int _currentRound = 0;
     
     public void Init(MatchSettings matchSettings, IConnectedClient red, IConnectedClient blue)
     {
@@ -42,33 +46,119 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         await _blue.StartMatchForClient(_red.ConnectedClient.UserInfo);
     }
 
-    private void HandleClientFinishedDiscarding(ClientManager client)
+    private async void HandleClientFinishedDiscarding(ClientManager client)
     {
-        client.OnClientFinishedDiscarding -= HandleClientFinishedDiscarding;
-
-        if (!_firstClientAlreadyFinishedDiscarding)
+        try
         {
-            _firstClientAlreadyFinishedDiscarding = true;
-            return;
+            client.OnClientFinishedDiscarding -= HandleClientFinishedDiscarding;
+
+            if (!_firstClientAlreadyFinishedDiscarding)
+            {
+                _firstClientAlreadyFinishedDiscarding = true;
+                return;
+            }
+        
+            await StartPickPhase();
         }
-        
-        StartPickPhase();
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
     }
 
-    private void StartPickPhase()
+    private async Task StartPickPhase()
     {
+        _currentRound++;
+
+        var multiplierForThisRound = GetMultiplierFromRound(_currentRound);
         
+        var picker = _lastPickWasRed ? _blue : _red;
+        var other  = !_lastPickWasRed ? _blue : _red;
+        
+        picker.OnDidPickMap += HandlePickerDidPickMap;
+
+        await picker.StartPickPhaseForClient(true, multiplierForThisRound);
+        await other.StartPickPhaseForClient(false, multiplierForThisRound);
+        
+        _lastPickWasRed = !_lastPickWasRed;
     }
 
-    public void Dispose()
+    private async void HandlePickerDidPickMap(VotingMap map, ClientManager client)
     {
-        
+        try
+        {
+            client.OnDidPickMap -= HandlePickerDidPickMap;
+
+            var other = client.IsRed ? _blue : _red;
+            
+            client.OnClientSubmittedScore += HandleClientSubmittedScore;
+            other.OnClientSubmittedScore += HandleClientSubmittedScore;
+
+            await other.PlayMap(map);
+        }
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
     }
 
-    private async Task SendToAllClients(ServerPacket serverPacket)
+    private async void HandleClientSubmittedScore(Score score, ClientManager client)
     {
-        await _red.ConnectedClient.SendPacket(serverPacket);
-        await _blue.ConnectedClient.SendPacket(serverPacket);
+        try
+        {
+            client.OnClientSubmittedScore -= HandleClientSubmittedScore;
+
+            if (_cachedScore == null)
+            {
+                _cachedScore = score;
+                return;
+            }
+        
+            var redScore = client.IsRed ? score : _cachedScore;
+            var blueScore = !client.IsRed ? score : _cachedScore;
+        
+            var difference = Math.Abs(score.Points - _cachedScore.Points);
+        
+            var loser = redScore.Points > blueScore.Points ? _blue : _red;
+        
+            loser.Damage(difference);
+
+            await _red.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
+            await _blue.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
+
+            await Task.Delay(500);
+
+            if (loser.Health == 0)
+            {
+                var winner = loser.IsRed ? _blue : _red;
+
+                var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+
+                await winner.EndMatchForClient(eloChange, true);
+                await loser.EndMatchForClient(eloChange, false);
+            }
+
+            await StartPickPhase();
+        }
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
+    }
+
+    private float GetMultiplierFromRound(int round)
+    {
+        if (round == 2)
+            return 1f;
+
+        return (float)round / 2;
+    }
+
+    private int ComputeEloChange(UserInfo winner, UserInfo loser)
+    {
+        var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Mmr - loser.Mmr) / 400.0))));
+
+        return (int) (100 * p);
     }
 }
 
@@ -88,6 +178,10 @@ public class ClientManager
     public event Action<ClientManager>? OnHealthDidReachZero;
 
     public event Action<ClientManager>? OnClientFinishedDiscarding;
+    
+    public event Action<VotingMap, ClientManager>? OnDidPickMap;
+    
+    public event Action<Score, ClientManager>? OnClientSubmittedScore;
     
     public ClientManager(IConnectedClient client, IDealer dealer, bool isRed)
     {
@@ -110,6 +204,11 @@ public class ClientManager
         await ConnectedClient.SendPacket(new MatchCreatedPacket(red, blue, AvailablePicks.ToArray()));
     }
 
+    public async Task SendRoundResults(Score red, Score blue, int redHealth, int blueHealth)
+    {
+        await ConnectedClient.SendPacket(new RoundResultsPacket(red, blue, redHealth, blueHealth));
+    }
+
     private void HandleUserFinishedDiscarding(DiscardMapsPacket packet, IConnectedClient client)
     {
         client.OnUserDiscardedMaps -= HandleUserFinishedDiscarding;
@@ -120,11 +219,49 @@ public class ClientManager
         OnClientFinishedDiscarding?.Invoke(this);
     }
 
+    public async Task PlayMap(VotingMap map)
+    {
+        ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
+        
+        await ConnectedClient.SendPacket(new PlayerSelectedMapPacket(map));
+    }
+
+    private void HandleClientDidSubmitScore(ScoreSubmissionPacket packet, IConnectedClient client)
+    {
+        client.OnScoreSubmission -= HandleClientDidSubmitScore;
+        
+        OnClientSubmittedScore?.Invoke(packet.GetScore(), this);
+    }
+
+    public async Task StartPickPhaseForClient(bool isPicking, float multiplier)
+    {
+        if (isPicking)
+            ConnectedClient.OnMapSelection += HandleClientSelectedMap;
+        
+        await ConnectedClient.SendPacket(new StartPickPhasePacket(AvailablePicks.ToArray(), isPicking, multiplier));
+    }
+
+    private void HandleClientSelectedMap(MapSelectionPacket packet, IConnectedClient client)
+    {
+        client.OnMapSelection -= HandleClientSelectedMap;
+
+        _availablePicks.Remove(packet.Selection);
+        
+        OnDidPickMap?.Invoke(packet.Selection, this);
+        
+        ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
+    }
+
     public void Damage(int amount)
     {
         Health = Math.Max(Health - amount, 0);
         
         if (Health <= 0)
             OnHealthDidReachZero?.Invoke(this);
+    }
+
+    public async Task EndMatchForClient(int eloChange, bool won)
+    {
+        await ConnectedClient.SendPacket(new MatchFinishedPacket(eloChange, won));
     }
 }
