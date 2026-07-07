@@ -4,7 +4,6 @@ using CompCube_Server.Api.Controllers;
 using CompCube_Server.Discord;
 using CompCube_Server.Discord.Commands;
 using CompCube_Server.Discord.Events;
-using CompCube_Server.Gameplay.Events;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
@@ -72,10 +71,8 @@ public class Program
         services.AddSingleton<ConnectionManager>();
 
         services.AddSingleton<GameMatchFactory>();
-        services.AddSingleton<EventFactory>();
         
         services.AddSingleton<QueueManager>();
-        services.AddSingleton<EventsManager>();
         
         services.AddSingleton<IQueue, DebugQueue>();
         services.AddSingleton<IQueue, StandardCasualQueue>();
@@ -87,7 +84,6 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
-        services.AddSingleton<EventApiController>();
         
         services.AddSingleton<MatchInfoMessageFormatter>();
         services.AddSingleton<UserCommands>();
