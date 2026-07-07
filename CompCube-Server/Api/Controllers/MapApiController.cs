@@ -10,7 +10,7 @@ public class MapApiController : ControllerBase
 {
     private readonly MapData _mapData;
     
-    private static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
+    public static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
 
     public MapApiController(MapData mapData)
     {

@@ -1,5 +1,7 @@
-﻿using CompCube_Models.Models.Map;
+﻿using System.IO.Compression;
+using CompCube_Models.Models.Map;
 using CompCube_Server.Api.BeatSaver;
+using CompCube_Server.Api.Controllers;
 using CompCube_Server.SQL;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
@@ -21,6 +23,20 @@ public class MapCommands(BeatSaverApiWrapper beatSaverApi, MapData mapData) : Ap
 
         if (!Enum.TryParse<VotingMap.DifficultyType>(diff, out var difficulty))
             return "Could not parse difficulty!";
+
+        var pathToBeatmap = Path.Combine(MapApiController.BeatmapsPath, beatmap.LatestVersion.Hash + ".zip");
+
+        if (!File.Exists(pathToBeatmap))
+        {
+            var beatmapBytes = await beatmap.LatestVersion.DownloadZIP();
+
+            if (beatmapBytes == null)
+            {
+                return "Could not download beatmap!";
+            }
+            
+            await File.WriteAllBytesAsync(pathToBeatmap, beatmapBytes);
+        }
         
         mapData.AddMap(new VotingMap(beatmap.LatestVersion.Hash, difficulty, mapCategory, categoryLabel));
 
