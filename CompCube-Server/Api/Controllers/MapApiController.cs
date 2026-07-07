@@ -8,9 +8,9 @@ namespace CompCube_Server.Api.Controllers;
 [ApiController]
 public class MapApiController(MapData mapData) : ControllerBase
 {
-    [HttpGet("/api/maps/keys")]
+    [HttpGet("/api/maps/hashes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<string[]> GetAllMapKeys() => mapData.GetAllMaps().Select(i => i.Key).Distinct().ToArray();
+    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMaps().Select(i => i.Hash).ToArray();
 
     [HttpGet("/api/maps/playlist")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -22,12 +22,12 @@ public class MapApiController(MapData mapData) : ControllerBase
 
         foreach (var song in allMaps)
         {
-            if (songs.Any(i => i.Key == song.Key))
+            if (songs.Any(i => i.Hash == song.Hash))
                 continue;
             
-            var allSimilarHashes = allMaps.Where(i => i.Key.Equals(song.Key, StringComparison.CurrentCultureIgnoreCase));
+            var allSimilarHashes = allMaps.Where(i => i.Hash.Equals(song.Hash, StringComparison.CurrentCultureIgnoreCase));
 
-            var playlistSong = new PlaylistSong(song.Key, allSimilarHashes.Select(i => i.Difficulty).ToArray());
+            var playlistSong = new PlaylistSong(song.Hash, allSimilarHashes.Select(i => i.Difficulty).ToArray());
             
             songs.Add(playlistSong);
         }
@@ -43,9 +43,9 @@ public class MapApiController(MapData mapData) : ControllerBase
     }
 }
 
-public class PlaylistSong(string key, VotingMap.DifficultyType[] difficultyTypes)
+public class PlaylistSong(string hash, VotingMap.DifficultyType[] difficultyTypes)
 {
-    public readonly string Key = key;
+    public readonly string Hash = hash;
 
     public readonly VotingMap.DifficultyType[] DifficultyTypes = difficultyTypes;
 
@@ -64,7 +64,7 @@ public class PlaylistSong(string key, VotingMap.DifficultyType[] difficultyTypes
         
         var jObject = new JObject
         {
-            {"key", Key},
+            {"hash", Hash},
             {"difficulties", difficultiesObject}
         };
 

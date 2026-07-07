@@ -9,7 +9,7 @@ public class MapData(Logger logger) : TableManager
     {
         var createDbCommand = Connection.CreateCommand();
         createDbCommand.CommandText = "CREATE TABLE IF NOT EXISTS mapData ( " + 
-                                      "key TEXT NOT NULL, " + 
+                                      "hash TEXT NOT NULL, " + 
                                       "difficulty TEXT NOT NULL, " + 
                                       "category TEXT NOT NULL, " +
                                       "categoryLabel TEXT NOT NULL" + 
@@ -20,8 +20,8 @@ public class MapData(Logger logger) : TableManager
     public void AddMap(VotingMap votingMap)
     {
         var command = Connection.CreateCommand();
-        command.CommandText = "INSERT INTO mapData VALUES (@key, @difficulty, @category, @categoryLabel)";
-        command.Parameters.AddWithValue("key", votingMap.Key);
+        command.CommandText = "INSERT INTO mapData VALUES (@hash, @difficulty, @category, @categoryLabel)";
+        command.Parameters.AddWithValue("hash", votingMap.Hash);
         command.Parameters.AddWithValue("difficulty", votingMap.Difficulty.ToString());
         command.Parameters.AddWithValue("category", votingMap.MapCategory.ToString());
         command.Parameters.AddWithValue("categoryLabel", votingMap.CategoryLabel);
@@ -29,7 +29,7 @@ public class MapData(Logger logger) : TableManager
         command.ExecuteNonQuery();
     }
 
-    public List<VotingMap> GetAllMaps(List<VotingMap>? exclude = null)
+    public List<VotingMap> GetAllMaps(List<VotingMap> exclude = null!)
     {
         var maps = new List<VotingMap>();
         
@@ -41,11 +41,11 @@ public class MapData(Logger logger) : TableManager
         {
             if (reader.FieldCount == 0) return [];
             
-            var id = reader.GetString(0);
+            var hash = reader.GetString(0);
 
             if (!Enum.TryParse<VotingMap.DifficultyType>(reader.GetString(1), out var difficulty))
             {
-                logger.Error($"Could not parse difficulty type for id {id}: {reader.GetString(1)}");
+                logger.Error($"Could not parse difficulty type for hash {hash}: {reader.GetString(1)}");
                 continue;
             }
             
@@ -53,16 +53,16 @@ public class MapData(Logger logger) : TableManager
 
             if (!Enum.TryParse<VotingMap.Category>(categoryString, out var category))
             {
-                logger.Error($"Could not parse category for id {id}: {categoryString}");
+                logger.Error($"Could not parse category for hash {hash}: {categoryString}");
                 continue;
             }
 
             var categoryLabel = reader.GetString(3);
             
-            maps.Add(new VotingMap(id, difficulty, category, categoryLabel));
+            maps.Add(new VotingMap(hash, difficulty, category, categoryLabel));
         }
 
-        if(exclude != null) maps = maps.Where(m => exclude.All(e => e.Key != m.Key)).ToList();
+        if(exclude != null) maps = maps.Where(m => !exclude.Any(e => e.Hash == m.Hash)).ToList();
 
         return maps;
     }
