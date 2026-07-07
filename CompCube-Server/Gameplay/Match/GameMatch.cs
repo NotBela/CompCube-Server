@@ -123,7 +123,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         
             var loser = redScore.Points > blueScore.Points ? _blue : _red;
         
-            loser.Damage(difference);
+            loser.Damage((int) (Math.Round(difference * GetMultiplierFromRound(_currentRound), MidpointRounding.AwayFromZero)));
 
             await _red.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
             await _blue.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
@@ -138,6 +138,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
 
                 await winner.EndMatchForClient(eloChange, true);
                 await loser.EndMatchForClient(eloChange, false);
+                return;
             }
 
             await StartPickPhase();
