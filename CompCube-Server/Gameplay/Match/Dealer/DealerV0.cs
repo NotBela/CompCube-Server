@@ -16,7 +16,7 @@ public class DealerV0(MapData mapData) : IDealer
 
         var shuffled = maps.OrderBy(_ => _random.Next()).ToList();
 
-        var pulledMaps = shuffled.DistinctBy(i => i.Hash).Take(3).ToArray();
+        var pulledMaps = shuffled.DistinctBy(i => i.Key).Take(3).ToArray();
         
         AddDiscarded(pulledMaps);
 
