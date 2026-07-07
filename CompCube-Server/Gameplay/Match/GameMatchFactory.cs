@@ -4,11 +4,11 @@ namespace CompCube_Server.Gameplay.Match;
 
 public class GameMatchFactory(IServiceProvider services)
 {
-    public GameMatch CreateNewMatch(IConnectedClient[] redTeamPlayers, IConnectedClient[] blueTeamPlayers, MatchSettings settings)
+    public GameMatch CreateNewMatch(IConnectedClient red, IConnectedClient blue, MatchSettings settings)
     {
         var match = ActivatorUtilities.CreateInstance<GameMatch>(services);
         
-        match.Init(redTeamPlayers, blueTeamPlayers, settings);
+        match.Init(settings, red, blue);
 
         return match;
     }

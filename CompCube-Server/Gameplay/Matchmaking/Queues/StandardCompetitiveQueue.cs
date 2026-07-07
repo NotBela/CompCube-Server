@@ -115,8 +115,8 @@ public class StandardCompetitiveQueue : StandardQueue
             b.Client.OnDisconnected -= OnClientDisconnected;
 
             var match = _gameMatchFactory.CreateNewMatch(
-                [a.Client],
-                [b.Client],
+                a.Client,
+                b.Client,
                 new MatchSettings(true, true, 75, 50)
             );
 
