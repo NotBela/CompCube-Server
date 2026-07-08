@@ -5,160 +5,60 @@ using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Discord.Events;
+using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.SQL;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchLog matchLog, IDiscordBot messageManager, RankingData rankingData) : IDisposable
+public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchLog matchLog, IDiscordBot messageManager, RankingData rankingData)
 {
     private MatchSettings _matchSettings;
 
-    private readonly Dictionary<UserInfo, Team> _initialPlayers = new();
+    private ClientManager _red;
+    private ClientManager _blue;
 
-    private List<IConnectedClient> _clients = [];
+    private bool _firstClientAlreadyFinishedDiscarding = false;
+
+    private bool _lastPickWasRed = false;
+
+    private Score? _cachedScore = null;
+
+    private int _currentRound = 0;
     
-    private readonly Dictionary<string, Team> _teams = new();
-
-    private readonly Dictionary<Team, int> _points = new();
-
-    private ScoreManager? _currentRoundScoreManager = null;
-    private VoteManager? _currentRoundVoteManager = null;
-
-    private int _roundCount = 0;
-
-    private readonly Dictionary<Team, int> _mmrChanges = new();
-
-    private readonly int _id = matchLog.GetValidMatchId();
-
-    private List<VotingMap> _playedMaps = [];
-
-    // refactor into configuration file at some point
-    private const int SendWinningVoteToClientDelayInMilliseconds = 3000;
-    private const int VotingTimeInSeconds = 15;
-    private const int TransitionToGameTimeInSeconds = 15;
-    private const int UnpauseTimeInSeconds = 10;
-    
-    public void Init(IConnectedClient[] red, IConnectedClient[] blue, MatchSettings settings)
+    public void Init(MatchSettings matchSettings, IConnectedClient red, IConnectedClient blue)
     {
-        _matchSettings = settings;
-
-        _clients = red.Concat(blue).ToList();
+        _matchSettings = matchSettings;
         
-        SetupTeam(red, Team.Red);
-        SetupTeam(blue, Team.Blue);
-        
-        _points.Add(Team.Red, 0);
-        _points.Add(Team.Blue, 0);
-        
-        _mmrChanges[Team.Red] = GetMmrChange(red.Select(i => i.UserInfo).ToArray(), blue.Select(i => i.UserInfo).ToArray());
-        _mmrChanges[Team.Blue] = GetMmrChange(blue.Select(i => i.UserInfo).ToArray(), red.Select(i => i.UserInfo).ToArray());
-        
-        return;
-        
-        void SetupTeam(IConnectedClient[] players, Team team)
-        {
-            foreach (var player in players)
-            {
-                player.OnDisconnected += HandleClientDisconnect;
-                player.OnUserVoted += HandlePlayerVoted;
-                
-                _teams.Add(player.UserInfo.UserId, team);
-                _initialPlayers.Add(player.UserInfo, team);
-            }
-        }
+        _red = new ClientManager(red, new DealerV0(mapData), true, logger);
+        _blue = new ClientManager(blue, new DealerV0(mapData), false, logger);
     }
 
-    private async void HandlePlayerVoted(VotePacket vote, IConnectedClient client)
-    {
-        try
-        {
-            await SendPacketToClientsAsync(new PlayerVotedPacket(_currentRoundVoteManager?.Options[vote.VoteIndex]!), null, [client]);
-        }
-        catch (Exception e)
-        {
-            logger.Error(e);
-        }
-    }
+    public void StartMatch() => StartMatchAsync();
 
     public async Task StartMatchAsync()
     {
-        // await SendPacketToClientsAsync(new MatchCreatedPacket(_teams.Where(i => i.Value == Team.Red).Select(i => i.Key.UserInfo).ToArray(), _teams.Where(i => i.Value == Team.Blue).Select(i => i.Key.UserInfo).ToArray()));
+        _red.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
+        _blue.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
 
-        var redPlayers = _initialPlayers.Where(i => _teams[i.Key.UserId] == Team.Red).Select(i => i.Key).ToArray();
-        var bluePlayers = _initialPlayers.Where(i => _teams[i.Key.UserId] == Team.Blue).Select(i => i.Key).ToArray();
-        
-        await SendPacketToClientsAsync(new MatchCreatedPacket(redPlayers, bluePlayers));
-        
-        await StartRound();
+        await _red.StartMatchForClient(_blue.ConnectedClient.UserInfo);
+        await _blue.StartMatchForClient(_red.ConnectedClient.UserInfo);
     }
 
-    private async Task StartRound()
+    private async void HandleClientFinishedDiscarding(ClientManager client)
     {
         try
         {
-            _roundCount++;
-            _currentRoundVoteManager?.Dispose();
-            _currentRoundVoteManager = new VoteManager(_clients.ToArray(), mapData, HandleVoteDecided, VotingTimeInSeconds, exclude: _playedMaps);
-        
-            // await Task.Delay(10);
-            await SendPacketToClientsAsync(new RoundStartedPacket(_currentRoundVoteManager.Options, VotingTimeInSeconds, _roundCount));
-        }
-        catch (Exception e)
-        {
-            logger.Error(e);
-        }
-    }
+            client.OnClientFinishedDiscarding -= HandleClientFinishedDiscarding;
 
-    private async void HandleVoteDecided(VotingMap votingMap)
-    {
-        try
-        {
-            _playedMaps.Add(votingMap);
-            _currentRoundScoreManager?.Dispose();
-            _currentRoundScoreManager = new ScoreManager(_clients.ToArray(), HandleResults);
-
-            await Task.Delay(SendWinningVoteToClientDelayInMilliseconds);
-
-            await SendPacketToClientsAsync(new BeginGameTransitionPacket(votingMap, TransitionToGameTimeInSeconds, UnpauseTimeInSeconds));
-        }
-        catch (Exception e)
-        {
-            logger.Error(e);
-        }
-    }
-
-    private async void HandleResults(Dictionary<IConnectedClient, Score> scores)
-    {
-        try
-        {
-            // stupid bandaid patch that will not work with match sizes of more than 2 people
-            var redPoints = scores.First(i => _teams[i.Key.UserInfo.UserId] == Team.Red).Value.Points;
-            var bluePoints = scores.First(i => _teams[i.Key.UserInfo.UserId] == Team.Blue).Value.Points;
-            
-            // if (redPlayers.Any())
-            //
-            // if (bluePlayers.Any())
-            //     bluePoints = bluePlayers.Sum(i => i.Value.Points);
-            
-            if (redPoints >= bluePoints)
-                _points[Team.Red] += 1;
-
-            if (bluePoints >= redPoints)
-                _points[Team.Blue] += 1;
-        
-            if (_points.Any(i => i.Value == 2))
+            if (!_firstClientAlreadyFinishedDiscarding)
             {
-                await EndMatchAsync();
+                _firstClientAlreadyFinishedDiscarding = true;
                 return;
             }
-            
-            await SendPacketToClientsAsync(new RoundResultsPacket(
-                scores.Select(i => new KeyValuePair<string, Score>(i.Key.UserInfo.UserId, i.Value)).ToDictionary(),
-                _points[Team.Red], _points[Team.Blue]));
-
-            await StartRound();
+        
+            await StartPickPhase();
         }
         catch (Exception e)
         {
@@ -166,144 +66,216 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         }
     }
 
-    public void StartMatch() => Task.Factory.StartNew(StartMatchAsync, TaskCreationOptions.LongRunning);
-
-    private async Task EndMatchAsync()
+    private async Task StartPickPhase()
     {
-        var winningTeam = Team.Red;
-
-        if (_points[Team.Blue] > _points[Team.Red])
-            winningTeam = Team.Blue;
+        _cachedScore = null;
         
-        var mmrChange = _mmrChanges[winningTeam];
-        
-        await SendPacketToClientsAsync(new MatchResultsPacket(mmrChange, _points[Team.Red], _points[Team.Blue]));
+        _currentRound++;
 
-        var winningPlayers = _initialPlayers.Where(i => i.Value == winningTeam)
-            .Select(i => i.Key).ToArray();
-        var losingPlayers = _initialPlayers.Where(i => i.Value != winningTeam)
-            .Select(i => i.Key).ToArray();
+        var multiplierForThisRound = GetMultiplierFromRound(_currentRound);
         
-        var matchResultsData = new MatchResultsData(winningPlayers, losingPlayers, mmrChange, false, _id, DateTime.Now);
-
-        if (_matchSettings.LogMatch)
-        {
-            matchLog.AddMatchToTable(matchResultsData);
-            messageManager.PostMatchResults(matchResultsData);
-        }
-
-        if (_matchSettings.Competitive)
-        {
-            rankingData.UpdateUserDataFromMatch(matchResultsData, mmrChange, _matchSettings.MmrPenaltyOnDisconnect);
-        }
-        // wait before disconnecting clients so that player two wont disconnect before results are sent
-        await Task.Delay(500);
+        var picker = _lastPickWasRed ? _blue : _red;
+        var other  = !_lastPickWasRed ? _blue : _red;
         
-        Dispose();
+        picker.OnDidPickMap += HandlePickerDidPickMap;
+
+        await picker.StartPickPhaseForClient(true, multiplierForThisRound);
+        await other.StartPickPhaseForClient(false, multiplierForThisRound);
+        
+        _lastPickWasRed = !_lastPickWasRed;
     }
 
-    private async Task EndMatchPrematurely(string reason, Team? forcedWinningTeam = null)
-    {
-        await SendPacketToClientsAsync(new PrematureMatchEndPacket(reason));
-
-        var winningTeam = _points.Max().Key;
-        
-        if (forcedWinningTeam != null)
-            winningTeam = forcedWinningTeam.Value;
-        
-        var matchResults = new MatchResultsData(
-            _initialPlayers.Where(i => i.Value == winningTeam).Select(i => i.Key).ToArray(), 
-            _initialPlayers.Where(i => i.Value != winningTeam).Select(i => i.Key).ToArray(), 
-            _mmrChanges[winningTeam], 
-            true, 
-            _id, 
-            DateTime.Now);
-        
-        if (_matchSettings.LogMatch)
-            matchLog.AddMatchToTable(matchResults);
-    }
-
-    private async void HandleClientDisconnect(IConnectedClient client)
+    private async void HandlePickerDidPickMap(VotingMap map, ClientManager client)
     {
         try
         {
-            client.OnDisconnected -= HandleClientDisconnect;
+            client.OnDidPickMap -= HandlePickerDidPickMap;
 
-            if (_teams.All(i => i.Value != _teams[client.UserInfo.UserId]))
+            var other = client.IsRed ? _blue : _red;
+            
+            client.OnClientSubmittedScore += HandleClientSubmittedScore;
+            other.OnClientSubmittedScore += HandleClientSubmittedScore;
+
+            await other.PlayMap(map);
+        }
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
+    }
+
+    private async void HandleClientSubmittedScore(Score score, ClientManager client)
+    {
+        try
+        {
+            client.OnClientSubmittedScore -= HandleClientSubmittedScore;
+
+            if (_cachedScore == null)
             {
-                var losingTeam = _teams[client.UserInfo.UserId];
-                var winningTeam = losingTeam == Team.Red ? Team.Blue : Team.Red;
-                
-                await EndMatchPrematurely("OpponentsDisconnected", winningTeam);
+                _cachedScore = score;
+                return;
+            }
+        
+            var redScore = client.IsRed ? score : _cachedScore;
+            var blueScore = !client.IsRed ? score : _cachedScore;
+        
+            var difference = Math.Abs(score.Points - _cachedScore.Points);
+        
+            var loser = redScore.Points > blueScore.Points ? _blue : _red;
+        
+            loser.Damage((int) (Math.Round(difference * GetMultiplierFromRound(_currentRound), MidpointRounding.AwayFromZero)));
+
+            await _red.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
+            await _blue.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
+
+            await Task.Delay(500);
+
+            if (loser.Health == 0)
+            {
+                var winner = loser.IsRed ? _blue : _red;
+
+                var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+
+                await winner.EndMatchForClient(eloChange, true);
+                await loser.EndMatchForClient(eloChange, false);
                 return;
             }
 
-            _clients.Remove(client);
-        
-            _currentRoundScoreManager?.HandlePlayerDisconneced(client);
-            _currentRoundVoteManager?.HandlePlayerDisconnected(client);
+            await StartPickPhase();
         }
         catch (Exception e)
         {
             logger.Error(e);
         }
     }
-    
-    private async Task SendPacketToClientsAsync(ServerPacket packet, Team? teamFilter = null, IConnectedClient[]? playerFilter = null)
+
+    private float GetMultiplierFromRound(int round)
     {
-        var players = _clients.ToList();
+        if (round == 2)
+            return 1f;
 
-        if (teamFilter != null)
-            players = players.Where(i => _teams[i.UserInfo.UserId] == teamFilter).ToList();
+        return Math.Max((float)round / 2, 1f);
+    }
 
-        if (playerFilter != null)
-            players = players.Where(i => !playerFilter.Contains(i)).ToList();
+    private int ComputeEloChange(UserInfo winner, UserInfo loser)
+    {
+        var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Mmr - loser.Mmr) / 400.0))));
 
-        foreach (var player in players)
+        return (int) (100 * p);
+    }
+}
+
+public class ClientManager
+{
+    public readonly IConnectedClient ConnectedClient;
+
+    private readonly IDealer _dealer;
+    
+    private List<VotingMap> _availablePicks;
+    public IReadOnlyList<VotingMap> AvailablePicks => _availablePicks;
+    
+    public int Health { get; private set; } = 1000000;
+
+    public readonly bool IsRed;
+
+    public event Action<ClientManager>? OnClientFinishedDiscarding;
+    
+    public event Action<VotingMap, ClientManager>? OnDidPickMap;
+    
+    public event Action<Score, ClientManager>? OnClientSubmittedScore;
+    
+    private readonly Logger _logger;
+    
+    public ClientManager(IConnectedClient client, IDealer dealer, bool isRed, Logger logger)
+    {
+        ConnectedClient = client;
+        
+        _dealer = dealer;
+        
+        _availablePicks = dealer.PullNewCards(5).ToList();
+        
+        IsRed = isRed;
+        
+        _logger = logger;
+    }
+
+    public async Task StartMatchForClient(UserInfo opponent)
+    {
+        var red = IsRed ? ConnectedClient.UserInfo : opponent;
+        var blue = !IsRed ? ConnectedClient.UserInfo : opponent;
+        
+        ConnectedClient.OnUserDiscardedMaps += HandleUserFinishedDiscarding;
+        
+        await ConnectedClient.SendPacket(new MatchCreatedPacket(red, blue, AvailablePicks.ToArray()));
+    }
+
+    public async Task SendRoundResults(Score red, Score blue, int redHealth, int blueHealth)
+    {
+        await ConnectedClient.SendPacket(new RoundResultsPacket(red, blue, redHealth, blueHealth));
+    }
+
+    private async void HandleUserFinishedDiscarding(DiscardMapsPacket packet, IConnectedClient client)
+    {
+        try
         {
-            await player.SendPacket(packet);
+            client.OnUserDiscardedMaps -= HandleUserFinishedDiscarding;
+        
+            _dealer.AddDiscarded(packet.Maps);
+
+            foreach (var discardedMap in packet.Maps)
+                _availablePicks.RemoveAll(i => i == discardedMap);
+
+            _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
+            OnClientFinishedDiscarding?.Invoke(this);
+
+            await ConnectedClient.SendPacket(new UpdateCardsPacket(_availablePicks.ToArray()));
+        }
+        catch (Exception e)
+        {
+            
         }
     }
 
-    private void DoForEachClient(Action<IConnectedClient> action)
+    public async Task PlayMap(VotingMap map)
     {
-        var players = _clients.ToList();
+        ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
         
-        foreach (var player in players)
-            action.Invoke(player);
-    }
-    
-    private int GetMmrChange(UserInfo[] winner, UserInfo[] loser)
-    {
-        if (_matchSettings.Competitive)
-            return 0;
-
-        var avgWinnerMmr = winner.Sum(i => i.Mmr) / winner.Length;
-        var avgLoserMmr = loser.Sum(i => i.Mmr) / winner.Length;
-        
-        var p = (1.0 / (1.0 + Math.Pow(10, ((avgWinnerMmr - avgLoserMmr) / 400.0))));
-
-        return (int) (_matchSettings.KFactor * p);
+        await ConnectedClient.SendPacket(new PlayerSelectedMapPacket(map));
     }
 
-    public enum Team
+    private void HandleClientDidSubmitScore(ScoreSubmissionPacket packet, IConnectedClient client)
     {
-        Red,
-        Blue,
-        FreeForAll
+        client.OnScoreSubmission -= HandleClientDidSubmitScore;
+        
+        OnClientSubmittedScore?.Invoke(packet.GetScore(), this);
     }
 
-    public void Dispose()
+    public async Task StartPickPhaseForClient(bool isPicking, float multiplier)
     {
-        _currentRoundScoreManager?.Dispose();
-        _currentRoundVoteManager?.Dispose();
+        if (isPicking)
+            ConnectedClient.OnMapSelection += HandleClientSelectedMap;
         
-        DoForEachClient(i =>
-        {
-            i.OnUserVoted -= HandlePlayerVoted;
-            i.OnDisconnected -= HandleClientDisconnect;
-            
-            i.Disconnect();
-        });
+        await ConnectedClient.SendPacket(new StartPickPhasePacket(AvailablePicks.ToArray(), isPicking, multiplier));
+    }
+
+    private void HandleClientSelectedMap(MapSelectionPacket packet, IConnectedClient client)
+    {
+        client.OnMapSelection -= HandleClientSelectedMap;
+
+        _availablePicks.Remove(packet.Selection);
+        
+        OnDidPickMap?.Invoke(packet.Selection, this);
+        
+        ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
+    }
+
+    public void Damage(int amount)
+    {
+        Health = Math.Max(Health - amount, 0);
+    }
+
+    public async Task EndMatchForClient(int eloChange, bool won)
+    {
+        await ConnectedClient.SendPacket(new MatchFinishedPacket(eloChange, won));
     }
 }

@@ -6,17 +6,43 @@ using Newtonsoft.Json.Linq;
 namespace CompCube_Server.Api.Controllers;
 
 [ApiController]
-public class MapApiController(MapData mapData) : ControllerBase
+public class MapApiController : ControllerBase
 {
+    private readonly MapData _mapData;
+    
+    public static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
+
+    public MapApiController(MapData mapData)
+    {
+        _mapData = mapData;
+
+        Directory.CreateDirectory(BeatmapsPath);
+    }
+
     [HttpGet("/api/maps/hashes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMaps().Select(i => i.Hash).ToArray();
+    public ActionResult<string[]> GetAllMapHashes() => _mapData.GetAllMaps().Select(i => i.Hash).ToArray();
+
+    [HttpGet("/api/maps/download/{hash}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult DownloadMap(string hash)
+    {
+        var filePath = Path.Combine(BeatmapsPath, $"{hash}.zip");
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound();
+        
+        var bytes = System.IO.File.ReadAllBytes(filePath);
+        
+        return File(bytes, "application/zip", $"{hash}.zip");
+    }
 
     [HttpGet("/api/maps/playlist")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<string> GetPlaylist()
     {
-        var allMaps = mapData.GetAllMaps();
+        var allMaps = _mapData.GetAllMaps();
 
         var songs = new List<PlaylistSong>();
 

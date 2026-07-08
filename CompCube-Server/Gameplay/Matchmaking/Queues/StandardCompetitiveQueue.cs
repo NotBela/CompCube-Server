@@ -62,7 +62,7 @@ public class StandardCompetitiveQueue : StandardQueue
         {
             try
             {
-                _logger.Info($"Matchmaking loop tick. Current pool size: {_clientPool.Count}, pending adds: {_pendingAdds.Count}");
+                // _logger.Info($"Matchmaking loop tick. Current pool size: {_clientPool.Count}, pending adds: {_pendingAdds.Count}");
                 DrainPendingAdds();
 
                 if (_clientPool.Count >= 2)
@@ -115,8 +115,8 @@ public class StandardCompetitiveQueue : StandardQueue
             b.Client.OnDisconnected -= OnClientDisconnected;
 
             var match = _gameMatchFactory.CreateNewMatch(
-                [a.Client],
-                [b.Client],
+                a.Client,
+                b.Client,
                 new MatchSettings(true, true, 75, 50)
             );
 

@@ -7,8 +7,8 @@ namespace CompCube_Server.Interfaces;
 
 public interface IConnectedClient
 {
-    public event Action<VotePacket, IConnectedClient>? OnUserVoted;
-    
+    public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
+    public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
     public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     
     public event Action<IConnectedClient>? OnDisconnected;

@@ -2,6 +2,7 @@
 using System.Text;
 using CompCube_Models.Models.ClientData;
 using CompCube_Models.Models.Packets;
+using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
@@ -15,8 +16,10 @@ public class ConnectedClient : IConnectedClient, IDisposable
     private readonly TcpClient _client;
 
     private bool _listenToClient = true;
-    
-    public event Action<VotePacket, IConnectedClient>? OnUserVoted;
+
+
+    public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
+    public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
     public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     public event Action<IConnectedClient>? OnDisconnected;
 
@@ -43,7 +46,7 @@ public class ConnectedClient : IConnectedClient, IDisposable
                     return;
                 }
 
-                var buffer = new byte[1024];
+                var buffer = new byte[4096];
 
                 if (IsConnectionAlive)
                     _client.GetStream().Flush();
@@ -83,6 +86,12 @@ public class ConnectedClient : IConnectedClient, IDisposable
         OnDisconnected?.Invoke(this);
     }
 
+    public async Task DisconnectAbruptlyAsync(string reason)
+    {
+        await SendPacket(new AbruptDisconnectionPacket(reason));
+        Disconnect();
+    }
+
     public bool IsConnectionAlive
     {
         get
@@ -107,11 +116,14 @@ public class ConnectedClient : IConnectedClient, IDisposable
     {
         switch (packet.PacketType)
         {
-            case UserPacket.UserPacketTypes.Vote:
-                OnUserVoted?.Invoke(packet as VotePacket ?? throw new Exception("Could not parse vote packet!"), this);
+            case UserPacket.UserPacketTypes.DiscardMaps:
+                OnUserDiscardedMaps?.Invoke(packet as DiscardMapsPacket ?? throw new InvalidOperationException(), this);
+                break;
+            case UserPacket.UserPacketTypes.MapSelection:
+                OnMapSelection?.Invoke(packet as MapSelectionPacket ?? throw new InvalidOperationException(), this);
                 break;
             case UserPacket.UserPacketTypes.ScoreSubmission:
-                OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new Exception("Could not parse score submission packet!"), this);
+                OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new InvalidOperationException(), this);
                 break;
             default:
                 Disconnect();
