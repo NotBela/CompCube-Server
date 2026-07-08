@@ -178,8 +178,6 @@ public class ClientManager
 
     public readonly bool IsRed;
 
-    public event Action<ClientManager>? OnHealthDidReachZero;
-
     public event Action<ClientManager>? OnClientFinishedDiscarding;
     
     public event Action<VotingMap, ClientManager>? OnDidPickMap;
@@ -258,9 +256,6 @@ public class ClientManager
     public void Damage(int amount)
     {
         Health = Math.Max(Health - amount, 0);
-        
-        if (Health <= 0)
-            OnHealthDidReachZero?.Invoke(this);
     }
 
     public async Task EndMatchForClient(int eloChange, bool won)
