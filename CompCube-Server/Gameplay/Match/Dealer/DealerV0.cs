@@ -25,7 +25,7 @@ public class DealerV0(MapData mapData) : IDealer
 
     public void AddDiscarded(VotingMap[] disallowedMaps)
     {
-        _discardedOrAlreadyPulled = disallowedMaps.ToList();
+        _discardedOrAlreadyPulled = _discardedOrAlreadyPulled.Concat(disallowedMaps).ToList();
     }
 
     public VotingMap[] CompleteDeck(VotingMap[] currentDeck, int targetSize)

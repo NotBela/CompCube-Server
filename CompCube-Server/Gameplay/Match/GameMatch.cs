@@ -216,6 +216,11 @@ public class ClientManager
         
         _dealer.AddDiscarded(packet.Maps);
 
+        foreach (var discardedMap in packet.Maps)
+            _availablePicks.RemoveAll(i => i == discardedMap);
+        
+        Console.WriteLine(_availablePicks.Count);
+
         _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
         OnClientFinishedDiscarding?.Invoke(this);
     }
