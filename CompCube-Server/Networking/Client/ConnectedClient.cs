@@ -89,6 +89,7 @@ public class ConnectedClient : IConnectedClient, IDisposable
     public async Task DisconnectAbruptlyAsync(string reason)
     {
         await SendPacket(new AbruptDisconnectionPacket(reason));
+        Disconnect();
     }
 
     public bool IsConnectionAlive
