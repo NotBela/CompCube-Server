@@ -31,8 +31,8 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
     {
         _matchSettings = matchSettings;
         
-        _red = new ClientManager(red, new DealerV0(mapData), true);
-        _blue = new ClientManager(blue, new DealerV0(mapData), false);
+        _red = new ClientManager(red, new DealerV0(mapData), true, logger);
+        _blue = new ClientManager(blue, new DealerV0(mapData), false, logger);
     }
 
     public void StartMatch() => StartMatchAsync();
@@ -184,7 +184,9 @@ public class ClientManager
     
     public event Action<Score, ClientManager>? OnClientSubmittedScore;
     
-    public ClientManager(IConnectedClient client, IDealer dealer, bool isRed)
+    private readonly Logger _logger;
+    
+    public ClientManager(IConnectedClient client, IDealer dealer, bool isRed, Logger logger)
     {
         ConnectedClient = client;
         
@@ -193,6 +195,8 @@ public class ClientManager
         _availablePicks = dealer.PullNewCards(5).ToList();
         
         IsRed = isRed;
+        
+        _logger = logger;
     }
 
     public async Task StartMatchForClient(UserInfo opponent)
@@ -210,19 +214,26 @@ public class ClientManager
         await ConnectedClient.SendPacket(new RoundResultsPacket(red, blue, redHealth, blueHealth));
     }
 
-    private void HandleUserFinishedDiscarding(DiscardMapsPacket packet, IConnectedClient client)
+    private async void HandleUserFinishedDiscarding(DiscardMapsPacket packet, IConnectedClient client)
     {
-        client.OnUserDiscardedMaps -= HandleUserFinishedDiscarding;
+        try
+        {
+            client.OnUserDiscardedMaps -= HandleUserFinishedDiscarding;
         
-        _dealer.AddDiscarded(packet.Maps);
+            _dealer.AddDiscarded(packet.Maps);
 
-        foreach (var discardedMap in packet.Maps)
-            _availablePicks.RemoveAll(i => i == discardedMap);
-        
-        Console.WriteLine(_availablePicks.Count);
+            foreach (var discardedMap in packet.Maps)
+                _availablePicks.RemoveAll(i => i == discardedMap);
 
-        _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
-        OnClientFinishedDiscarding?.Invoke(this);
+            _availablePicks = _dealer.CompleteDeck(_availablePicks.ToArray(), 5).ToList();
+            OnClientFinishedDiscarding?.Invoke(this);
+
+            await ConnectedClient.SendPacket(new UpdateCardsPacket(_availablePicks.ToArray()));
+        }
+        catch (Exception e)
+        {
+            
+        }
     }
 
     public async Task PlayMap(VotingMap map)
