@@ -62,7 +62,7 @@ public class StandardCompetitiveQueue : StandardQueue
         {
             try
             {
-                _logger.Info($"Matchmaking loop tick. Current pool size: {_clientPool.Count}, pending adds: {_pendingAdds.Count}");
+                // _logger.Info($"Matchmaking loop tick. Current pool size: {_clientPool.Count}, pending adds: {_pendingAdds.Count}");
                 DrainPendingAdds();
 
                 if (_clientPool.Count >= 2)
