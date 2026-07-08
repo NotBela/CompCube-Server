@@ -105,11 +105,7 @@ public class ConnectionManager : IDisposable
                     continue;
                 }
                 
-                _logger.Info("debug 0");
-
                 var userInfo = _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName);
-
-                _logger.Info("debug 1");
                 
                 var connectedClient = new ConnectedClient(client, userInfo, _logger);
 
