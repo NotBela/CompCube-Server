@@ -2,6 +2,7 @@
 using System.Text;
 using CompCube_Models.Models.ClientData;
 using CompCube_Models.Models.Packets;
+using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
@@ -83,6 +84,11 @@ public class ConnectedClient : IConnectedClient, IDisposable
         _client.Close();
         
         OnDisconnected?.Invoke(this);
+    }
+
+    public async Task DisconnectAbruptlyAsync(string reason)
+    {
+        await SendPacket(new AbruptDisconnectionPacket(reason));
     }
 
     public bool IsConnectionAlive

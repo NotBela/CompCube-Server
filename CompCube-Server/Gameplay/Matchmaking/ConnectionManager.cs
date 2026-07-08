@@ -105,8 +105,15 @@ public class ConnectionManager : IDisposable
                     continue;
                 }
 
-                var connectedClient = new ConnectedClient(client,
-                    _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName), _logger);
+                var userInfo = _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName);
+
+                var connectedClient = new ConnectedClient(client, userInfo, _logger);
+
+                if (userInfo.Banned)
+                {
+                    await connectedClient.DisconnectAbruptlyAsync("You have been banned from CompCube.");
+                    return;
+                }
 
                 var targetMatchmaker = _queueManager.GetQueueFromName(packet.Queue);
 
