@@ -40,14 +40,14 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
                 OnUserDiscardedMaps?.Invoke(new DiscardMapsPacket([]), this);
                 break;
             case ServerPacket.ServerPacketTypes.PlayerSelectedMap:
-                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(400000, 12000, true, 0, false), this);
+                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(400000, 400000, true, 0, false), this);
                 break;
             case ServerPacket.ServerPacketTypes.StartPickPhase:
                 var pickPhasePacket = packet as StartPickPhasePacket;
-                if (pickPhasePacket.IsOwnPick)
+                if (pickPhasePacket!.IsOwnPick)
                 {
                     await Task.Delay(15000);
-                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
+                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First(i => i.Hash == "6abbfe0b5659600b33cafbfe994cf40c8f97e806")), this);
                     await Task.Delay(5000);
                     OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(400000, 400000, true, 0, false), this);
                 }

@@ -34,7 +34,7 @@ public class ConnectedClient : IConnectedClient, IDisposable
         Task.Factory.StartNew(ListenToClient, TaskCreationOptions.LongRunning);
     }
 
-    private async Task ListenToClient()
+    private void ListenToClient()
     {
         while (_listenToClient)
         {
@@ -62,9 +62,16 @@ public class ConnectedClient : IConnectedClient, IDisposable
                 if (json.Length == 0)
                     continue;
 
-                var packet = UserPacket.Deserialize(json);
+                var packetWasDeserialized = UserPacket.TryDeserialize(json, out var packet);
 
-                ProcessRecievedPacket(packet);
+                if (!packetWasDeserialized)
+                {
+                    _logger.Info("Failed to deserialize packet from client");
+                    Disconnect();
+                    return;
+                }
+
+                ProcessRecievedPacket(packet!);
             }
             catch (ObjectDisposedException)
             {

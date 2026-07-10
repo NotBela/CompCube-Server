@@ -8,6 +8,7 @@ using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.Client;
 using CompCube_Server.SQL;
+using Newtonsoft.Json;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
@@ -91,10 +92,21 @@ public class ConnectionManager : IDisposable
 
                 var json = Encoding.UTF8.GetString(buffer);
 
-                _logger.Info(json);
+                var wasSuccessful = UserPacket.TryDeserialize(json, out var userPacket);
 
-                var packet = UserPacket.Deserialize(json) as JoinRequestPacket ??
-                             throw new Exception("Could not deserialize packet!");
+                if (!wasSuccessful)
+                {
+                    _logger.Info($"Failed to deserialize packet from client");
+                    client.Dispose();
+                    continue;
+                }
+
+                if (userPacket is not JoinRequestPacket packet)
+                {
+                    _logger.Info($"Failed to deserialize packet as JoinRequestPacket");
+                    client.Dispose();
+                    continue;
+                }
 
                 if (_connectedClients.Any(i => i.UserInfo.UserId == packet.UserId))
                 {
