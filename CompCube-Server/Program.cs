@@ -34,10 +34,6 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-
-        var apiPort = builder.Configuration.GetSection("Server").GetValue("ApiPort", 7198);
-
-        builder.WebHost.UseUrls($"https://localhost:{apiPort}", "http://localhost:5012", $"https://0.0.0.0:{apiPort}", "https://0.0.0.0:5012");
         
         var host = builder.Build();
             
