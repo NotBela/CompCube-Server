@@ -97,7 +97,7 @@ public class UserData(RankingData rankingData) : TableManager
         rankCommand.Parameters.AddWithValue("@mmrThreshold", mmr);
         var rank = (long) (rankCommand.ExecuteScalar() ?? -1) + 1;
 
-        return new UserInfo(userName, id, mmr, DivisionManager.GetDivisionFromMmr(mmr), badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
+        return new UserInfo(userName, id, mmr, badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
     }
 
     private Badge? GetBadge(string? badgeName)

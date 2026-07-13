@@ -14,7 +14,7 @@ public class DebugQueue(Logger logger, GameMatchFactory gameMatchFactory, MapDat
 
     public void AddClientToPool(IConnectedClient client)
     {
-        var match = gameMatchFactory.CreateNewMatch(client, new DummyConnectedClient(new UserInfo("debug", "0", 1000, new DivisionInfo(DivisionInfo.DivisionName.Bronze, 1, "#000000", false), null, 0, null, false, 0, 0, 0, 0), mapData), new MatchSettings(false, false, 0, 0));
+        var match = gameMatchFactory.CreateNewMatch(client, new DummyConnectedClient(new UserInfo("debug", "0", 1000, null, 0, null, false, 0, 0, 0, 0), mapData), new MatchSettings(false, false, 0, 0));
         match.StartMatch();
     }
 }
