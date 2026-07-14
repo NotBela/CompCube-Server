@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using System.Reflection;
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
@@ -22,9 +23,10 @@ public class Program
     
     public static void Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
-        builder.Configuration.SetBasePath(Directory.GetCurrentDirectory());
-        Console.WriteLine($"{Directory.GetCurrentDirectory()}");
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
+        {
+            ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
+        });
 
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
         
