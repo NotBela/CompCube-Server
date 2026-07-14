@@ -23,6 +23,8 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Configuration.SetBasePath(builder.Environment.WebRootPath);
+        Console.WriteLine($"{builder.Environment.WebRootPath}");
 
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
         
