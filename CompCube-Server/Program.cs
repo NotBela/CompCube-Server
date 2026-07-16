@@ -67,8 +67,8 @@ public class Program
         host.UseSwagger();
         host.UseSwaggerUI();
 
-        host.UseHttpsRedirection();
-        host.MapControllers().RequireHost($"*:{apiPort}");
+        // host.UseHttpsRedirection();
+        host.MapControllers();
 
         if (_useDiscordIntegration)
         {
@@ -85,7 +85,7 @@ public class Program
 
         host.Map("", async context =>
         {
-            if (context.WebSockets.IsWebSocketRequest && context.Connection.LocalPort == webSocketPort)
+            if (context.WebSockets.IsWebSocketRequest)
             {
                 using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
                 var socketFinishedTcs = new TaskCompletionSource();
