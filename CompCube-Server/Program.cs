@@ -47,10 +47,19 @@ public class Program
             Console.WriteLine("No websocket port configured. Defaulting to 8008");
             webSocketPort = 8008;
         }
+        
+        var apiPort = builder.Configuration.GetSection("Server").GetValue("ApiListeningPort", -1);
+
+        if (apiPort == -1)
+        {
+            Console.WriteLine("No API port configured. Defaulting to 7198");
+            apiPort = 7198;
+        }
 
         builder.WebHost.ConfigureKestrel(options =>
         {
             options.ListenAnyIP(webSocketPort);
+            options.ListenAnyIP(apiPort);
         });
         
         var host = builder.Build();
@@ -59,7 +68,7 @@ public class Program
         host.UseSwaggerUI();
 
         host.UseHttpsRedirection();
-        host.MapControllers();
+        host.MapControllers().RequireHost($"*:{apiPort}");
 
         if (_useDiscordIntegration)
         {
@@ -74,9 +83,9 @@ public class Program
             KeepAliveInterval = TimeSpan.FromSeconds(30),
         });
 
-        host.Map("/ws", async context =>
+        host.Map("", async context =>
         {
-            if (context.WebSockets.IsWebSocketRequest)
+            if (context.WebSockets.IsWebSocketRequest && context.Connection.LocalPort == webSocketPort)
             {
                 using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
                 var socketFinishedTcs = new TaskCompletionSource();
