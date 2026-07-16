@@ -47,7 +47,7 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
                 if (pickPhasePacket!.IsOwnPick)
                 {
                     await Task.Delay(15000);
-                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First(i => i.Hash == "6abbfe0b5659600b33cafbfe994cf40c8f97e806")), this);
+                    OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
                     await Task.Delay(5000);
                     OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(400000, 400000, true, 0, false), this);
                 }
@@ -55,8 +55,9 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
         }
     }
 
-    public void Disconnect()
+    public Task Disconnect()
     {
         OnDisconnected?.Invoke(this);
+        return Task.CompletedTask;
     }
 }

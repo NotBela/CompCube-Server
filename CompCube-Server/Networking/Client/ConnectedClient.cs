@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using CompCube_Models.Models.ClientData;
 using CompCube_Models.Models.Packets;
@@ -9,14 +10,12 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.Networking.Client;
 
-public class ConnectedClient : IConnectedClient, IDisposable
+public class ConnectedClient : IConnectedClient, IAsyncDisposable
 {
     private readonly Logger _logger;
     
-    private readonly TcpClient _client;
-
-    private bool _listenToClient = true;
-
+    private readonly WebSocket _client;
+    private readonly TaskCompletionSource _socketFinishedTcs;
 
     public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
     public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
@@ -24,102 +23,82 @@ public class ConnectedClient : IConnectedClient, IDisposable
     public event Action<IConnectedClient>? OnDisconnected;
 
     public UserInfo UserInfo { get; }
+    
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-    public ConnectedClient(TcpClient client, UserInfo userInfo, Logger logger)
+    public ConnectedClient(WebSocket client, UserInfo userInfo, TaskCompletionSource socketFinishedTcs, Logger logger)
     {
         _client = client;
         UserInfo = userInfo;
         _logger = logger;
+        _socketFinishedTcs = socketFinishedTcs;
 
         Task.Factory.StartNew(ListenToClient, TaskCreationOptions.LongRunning);
     }
 
-    private void ListenToClient()
+    private async Task ListenToClient()
     {
-        while (_listenToClient)
+        try
         {
-            try
+            while (true)
             {
-                if (!IsConnectionAlive)
+                _logger.Info(_client.State.ToString());
+                
+                var buffer = new byte[4096];
+                
+                var result = await _client.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
+                Array.Resize(ref buffer, result.Count);
+                
+                if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    Disconnect();
+                    await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
+                    await Disconnect();
                     return;
                 }
 
-                var buffer = new byte[4096];
+                var json = Encoding.UTF8.GetString(buffer);
 
-                if (IsConnectionAlive)
-                    _client.GetStream().Flush();
-                
-                if (!_client.GetStream().DataAvailable)
-                    continue;
-                
-                var bytesRead = _client.GetStream().Read(buffer, 0, buffer.Length);
-                Array.Resize(ref buffer, bytesRead);
-                
-                var json = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
-
-                if (json.Length == 0)
+                if (json == "")
                     continue;
 
                 var packetWasDeserialized = UserPacket.TryDeserialize(json, out var packet);
 
                 if (!packetWasDeserialized)
                 {
-                    _logger.Info("Failed to deserialize packet from client");
-                    Disconnect();
+                    _logger.Error($"Failed to deserialize packet from client {UserInfo.UserId}");
+                    await Disconnect();
                     return;
                 }
 
-                ProcessRecievedPacket(packet!);
+                await ProcessRecievedPacket(packet!);
             }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
-            catch (Exception e)
-            {
-                Disconnect();
-                _logger.Error(e);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e);
         }
     }
 
-    public void Disconnect()
+    public async Task Disconnect()
     {
-        _listenToClient = false;
-        _client.Close();
-        
         OnDisconnected?.Invoke(this);
+        await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
+        _socketFinishedTcs.SetResult();
     }
 
     public async Task DisconnectAbruptlyAsync(string reason)
     {
         await SendPacket(new AbruptDisconnectionPacket(reason));
-        Disconnect();
+        await Disconnect();
     }
 
-    public bool IsConnectionAlive
-    {
-        get
-        {
-            try
-            {
-                var poll = _client.Client.Poll(1, SelectMode.SelectRead) && !_client.GetStream().DataAvailable;
+    public bool IsConnectionAlive => _client.State is WebSocketState.Open or WebSocketState.Connecting;
 
-                return !poll;
-            }
-            catch (Exception e)
-            {
-                if (e is SocketException socketException)
-                    return socketException.SocketErrorCode is SocketError.WouldBlock or SocketError.Interrupted;
-
-                return false;
-            }
-        }
-    }
-
-    private void ProcessRecievedPacket(UserPacket packet)
+    private async Task ProcessRecievedPacket(UserPacket packet)
     {
         switch (packet.PacketType)
         {
@@ -133,24 +112,18 @@ public class ConnectedClient : IConnectedClient, IDisposable
                 OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new InvalidOperationException(), this);
                 break;
             default:
-                Disconnect();
+                await Disconnect();
                 throw new Exception("Unknown packet type!");
         }
     }
 
     public async Task SendPacket(ServerPacket packet)
     {
-        await _client.GetStream().WriteAsync(packet.SerializeToBytes());
-        
-        // wait a 20th of a second to prevent packets from being sent in the same time frame and being read as
-        // one super long packet
-        
-        // this value may need to be decreased in the future
-        await Task.Delay(50);
+        await _client.SendAsync(new ArraySegment<byte>(packet.SerializeToBytes()), WebSocketMessageType.Text, true, _cancellationTokenSource.Token);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        Disconnect();
+        await Disconnect();
     }
 }

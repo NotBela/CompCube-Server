@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using System.Net.WebSockets;
 using System.Reflection;
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
@@ -38,14 +39,24 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+
+        var webSocketPort = builder.Configuration.GetSection("Server").GetValue("WebsocketListeningPort", -1);
+
+        if (webSocketPort == -1)
+        {
+            Console.WriteLine("No websocket port configured. Defaulting to 8008");
+            webSocketPort = 8008;
+        }
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.ListenAnyIP(webSocketPort);
+        });
         
         var host = builder.Build();
             
-        if (host.Environment.IsDevelopment())
-        {
-            host.UseSwagger();
-            host.UseSwaggerUI();
-        }
+        host.UseSwagger();
+        host.UseSwaggerUI();
 
         host.UseHttpsRedirection();
         host.MapControllers();
@@ -56,7 +67,29 @@ public class Program
             host.UseGatewayHandlers();
         }
         
-        host.Services.GetRequiredService<ConnectionManager>();
+        var connectionManager = host.Services.GetRequiredService<ConnectionManager>();
+
+        host.UseWebSockets(new WebSocketOptions
+        {
+            KeepAliveInterval = TimeSpan.FromSeconds(30),
+        });
+
+        host.Map("/ws", async context =>
+        {
+            if (context.WebSockets.IsWebSocketRequest)
+            {
+                using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                var socketFinishedTcs = new TaskCompletionSource();
+                
+                await connectionManager.HandleWebSocket(webSocket, socketFinishedTcs);
+
+                await socketFinishedTcs.Task;
+            }
+            else
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            }
+        });
         
         host.Run();
     }

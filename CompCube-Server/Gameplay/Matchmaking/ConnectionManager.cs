@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Net.Sockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
@@ -8,46 +7,105 @@ using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.Client;
 using CompCube_Server.SQL;
-using Newtonsoft.Json;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
-public class ConnectionManager : IDisposable
+public class ConnectionManager
 {
     private readonly UserData _userData;
     private readonly Logger _logger;
     private readonly QueueManager _queueManager;
-
-    private readonly TcpListener _listener;
     
     private readonly List<IConnectedClient> _connectedClients = [];
     
-    public ConnectionManager(UserData userData, Logger logger, QueueManager queueManager, IConfiguration config)
+    public ConnectionManager(UserData userData, Logger logger, QueueManager queueManager)
     {
         _userData = userData;
         _logger = logger;
         _queueManager = queueManager;
-        
-        var port = config.GetSection("Server").GetValue("TcpListeningPort", -1);
-
-        if (port == -1)
-        {
-            logger.Info("No server port configured! Defaulting to 8008.");
-            port = 8008;
-        }
-        
-        _listener = new(IPAddress.Any, port);
         
         Start();
     }
 
     public void Start()
     {
-        _listener.Start();
-        Task.Factory.StartNew(ListenForClients, TaskCreationOptions.LongRunning);
         Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
         
         _logger.Info("Started listening for clients");
+    }
+
+    public async Task HandleWebSocket(WebSocket socket, TaskCompletionSource socketFinishedTcs)
+    {
+        var buffer = new byte[1024];
+
+        var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        buffer = buffer[..result.Count];
+
+        if (result.MessageType == WebSocketMessageType.Close)
+        {
+            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            socketFinishedTcs.SetResult();
+            return;
+        }
+        
+        var json = Encoding.UTF8.GetString(buffer);
+
+        var couldParsePacket = UserPacket.TryDeserialize(json, out var packet);
+
+        if (!couldParsePacket)
+        {
+            _logger.Error("Could not parse packet from client.");
+            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
+            socketFinishedTcs.SetResult();
+            return;
+        }
+
+        if (packet is not JoinRequestPacket joinRequestPacket)
+        {
+            _logger.Error("Invalid packet from client.");
+            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
+            socketFinishedTcs.SetResult();
+            return;
+        }
+
+        if (_connectedClients.Any(i => i.UserInfo.UserId == joinRequestPacket.UserId))
+        {
+            var bytes = new JoinResponsePacket(false, "You are logged in from another location!").SerializeToBytes();
+            
+            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+            await socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
+            socketFinishedTcs.SetResult();
+            return;
+        }
+        
+        var userInfo = _userData.UpdateUserDataOnLogin(joinRequestPacket.UserId, joinRequestPacket.UserName);
+
+        var client = new ConnectedClient(socket, userInfo, socketFinishedTcs, _logger);
+
+        if (client.UserInfo.Banned)
+        {
+            await client.SendPacket(new JoinResponsePacket(false, "You have been banned from CompCube"));
+            await client.Disconnect();
+            return;
+        }
+
+        var queue = _queueManager.GetQueueFromName(joinRequestPacket.Queue);
+
+        if (queue == null)
+        {
+            await client.SendPacket(new JoinResponsePacket(false, "Invalid queue"));
+            await client.Disconnect();
+            return;
+        }
+        
+        await client.SendPacket(new JoinResponsePacket(true, ""));
+        
+        queue.AddClientToPool(client);
+        
+        _connectedClients.Add(client);
+        client.OnDisconnected += OnDisconnected;
+        
+        _logger.Info($"User {client.UserInfo.Username} ({client.UserInfo.UserId}) joined queue {queue.QueueName}");
     }
 
     private async Task PollAllClients()
@@ -64,7 +122,7 @@ public class ConnectionManager : IDisposable
                 {
                     if (client.IsConnectionAlive)
                         continue;
-                    client.Disconnect();
+                    await client.Disconnect();
                     _logger.Info($"disconnected {client.UserInfo.Username} via polling");
                 }
                 catch (Exception e)
@@ -77,82 +135,7 @@ public class ConnectionManager : IDisposable
         }
     }
 
-    private async Task ListenForClients()
-    {
-        while (true)
-        {
-            var client = await _listener.AcceptTcpClientAsync();
-
-            try
-            {
-                var buffer = new byte[1024];
-
-                var streamLength = client.GetStream().Read(buffer, 0, buffer.Length);
-                buffer = buffer[..streamLength];
-
-                var json = Encoding.UTF8.GetString(buffer);
-
-                var wasSuccessful = UserPacket.TryDeserialize(json, out var userPacket);
-
-                if (!wasSuccessful)
-                {
-                    _logger.Info($"Failed to deserialize packet from client");
-                    client.Dispose();
-                    continue;
-                }
-
-                if (userPacket is not JoinRequestPacket packet)
-                {
-                    _logger.Info($"Failed to deserialize packet as JoinRequestPacket");
-                    client.Dispose();
-                    continue;
-                }
-
-                if (_connectedClients.Any(i => i.UserInfo.UserId == packet.UserId))
-                {
-                    await client.GetStream()
-                        .WriteAsync(new JoinResponsePacket(false, "You are logged in from another location!")
-                            .SerializeToBytes());
-                    client.Close();
-                    continue;
-                }
-                
-                var userInfo = _userData.UpdateUserDataOnLogin(packet.UserId, packet.UserName);
-                
-                var connectedClient = new ConnectedClient(client, userInfo, _logger);
-
-                if (userInfo.Banned)
-                {
-                    await connectedClient.SendPacket(new JoinResponsePacket(false,
-                        "You have been banned from CompCube."));
-                    continue;
-                }
-
-                var targetMatchmaker = _queueManager.GetQueueFromName(packet.Queue);
-
-                if (targetMatchmaker == null)
-                {
-                    await connectedClient.SendPacket(new JoinResponsePacket(false, "Invalid Queue"));
-                    connectedClient.Disconnect();
-                    continue;
-                }
-
-                await connectedClient.SendPacket(new JoinResponsePacket(true, "success"));
-
-                targetMatchmaker.AddClientToPool(connectedClient);
-
-                _connectedClients.Add(connectedClient);
-                connectedClient.OnDisconnected += OnDisconnected;
-
-                _logger.Info($"User {connectedClient.UserInfo.Username} ({connectedClient.UserInfo.UserId}) joined queue {targetMatchmaker.QueueName}");
-            }
-            catch (Exception e)
-            {
-                _logger.Error(e);
-                client.Close();
-            }
-        }
-    }
+    
 
     private void OnDisconnected(IConnectedClient client)
     {
@@ -160,15 +143,5 @@ public class ConnectionManager : IDisposable
         
         _connectedClients.Remove(client);
         _logger.Info($"{client.UserInfo.Username} ({client.UserInfo.UserId}) disconnected");
-    }
-
-    private void Stop()
-    {
-        _listener.Stop();
-    }
-
-    public void Dispose()
-    {
-        Stop();
     }
 }

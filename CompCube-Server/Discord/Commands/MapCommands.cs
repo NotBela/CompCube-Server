@@ -26,6 +26,8 @@ public class MapCommands(BeatSaverApiWrapper beatSaverApi, MapData mapData) : Ap
 
         var pathToBeatmap = Path.Combine(MapApiController.BeatmapsPath, beatmap.LatestVersion.Hash + ".zip");
 
+        Directory.CreateDirectory(MapApiController.BeatmapsPath);
+        
         if (!File.Exists(pathToBeatmap))
         {
             var beatmapBytes = await beatmap.LatestVersion.DownloadZIP();
