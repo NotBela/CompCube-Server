@@ -271,11 +271,12 @@ public class ClientManager
 
     public void Damage(int amount, float multiplier)
     {
-        Health = (int) Math.Round(amount * multiplier, MidpointRounding.AwayFromZero);
+        Health = Math.Max(Health - (int) Math.Round(amount * multiplier, MidpointRounding.AwayFromZero), 0);
     }
 
     public async Task EndMatchForClient(int eloChange, bool won)
     {
         await ConnectedClient.SendPacket(new MatchFinishedPacket(eloChange, won));
+        await ConnectedClient.Disconnect();
     }
 }
