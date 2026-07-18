@@ -123,7 +123,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         
             var loser = redScore.Points > blueScore.Points ? _blue : _red;
         
-            loser.Damage((int) (Math.Round(difference * GetMultiplierFromRound(_currentRound), MidpointRounding.AwayFromZero)));
+            loser.Damage(difference, GetMultiplierFromRound(_currentRound));
 
             await _red.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
             await _blue.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
@@ -232,7 +232,7 @@ public class ClientManager
         }
         catch (Exception e)
         {
-            
+            _logger.Error(e);
         }
     }
 
@@ -269,9 +269,9 @@ public class ClientManager
         ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
     }
 
-    public void Damage(int amount)
+    public void Damage(int amount, float multiplier)
     {
-        Health = Math.Max(Health - amount, 0);
+        Health = (int) Math.Round(amount * multiplier, MidpointRounding.AwayFromZero);
     }
 
     public async Task EndMatchForClient(int eloChange, bool won)
