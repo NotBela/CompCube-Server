@@ -26,6 +26,8 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
     
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
+    private bool _isDisconnected = false;
+
     public ConnectedClient(WebSocket client, UserInfo userInfo, TaskCompletionSource socketFinishedTcs, Logger logger)
     {
         _client = client;
@@ -42,16 +44,13 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
         {
             while (true)
             {
-                _logger.Info(_client.State.ToString());
-                
                 var buffer = new byte[4096];
-                
+
                 var result = await _client.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
                 Array.Resize(ref buffer, result.Count);
-                
+
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
                     await Disconnect();
                     return;
                 }
@@ -77,6 +76,10 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
         {
 
         }
+        catch (WebSocketException)
+        {
+            
+        }
         catch (Exception e)
         {
             _logger.Error(e);
@@ -85,9 +88,29 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
 
     public async Task Disconnect()
     {
-        OnDisconnected?.Invoke(this);
-        await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
-        _socketFinishedTcs.SetResult();
+        if (_isDisconnected)
+            return;
+        _isDisconnected = true;
+        
+        try
+        {
+            OnDisconnected?.Invoke(this);
+            await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (WebSocketException)
+        {
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e);
+        }
+        finally
+        {
+            _socketFinishedTcs.SetResult();
+        }
     }
 
     public async Task DisconnectAbruptlyAsync(string reason)
@@ -119,7 +142,22 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
 
     public async Task SendPacket(ServerPacket packet)
     {
-        await _client.SendAsync(new ArraySegment<byte>(packet.SerializeToBytes()), WebSocketMessageType.Text, true, _cancellationTokenSource.Token);
+        try
+        {
+            await _client.SendAsync(new ArraySegment<byte>(packet.SerializeToBytes()), WebSocketMessageType.Text, true,
+                _cancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (WebSocketException)
+        {
+            await Disconnect();
+        }
+        catch (Exception e)
+        {
+            _logger.Error(e);
+        }
     }
 
     public async ValueTask DisposeAsync()

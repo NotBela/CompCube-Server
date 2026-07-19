@@ -41,9 +41,23 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
     {
         _red.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
         _blue.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
+        
+        _red.ClientDidDisconnect += HandleClientDisconnected;
 
         await _red.StartMatchForClient(_blue.ConnectedClient.UserInfo);
         await _blue.StartMatchForClient(_red.ConnectedClient.UserInfo);
+    }
+
+    private async void HandleClientDisconnected(ClientManager client)
+    {
+        try
+        {
+            await EndMatchAbruptly("Player Forfeit");
+        }
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
     }
 
     private async void HandleClientFinishedDiscarding(ClientManager client)
@@ -149,6 +163,12 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         }
     }
 
+    private async Task EndMatchAbruptly(string reason)
+    {
+        await _red.DisconnectClientAbruptly(reason);
+        await _blue.DisconnectClientAbruptly(reason);
+    }
+
     private float GetMultiplierFromRound(int round)
     {
         if (round == 2)
@@ -184,6 +204,8 @@ public class ClientManager
     
     public event Action<Score, ClientManager>? OnClientSubmittedScore;
     
+    public event Action<ClientManager>? ClientDidDisconnect;
+    
     private readonly Logger _logger;
     
     public ClientManager(IConnectedClient client, IDealer dealer, bool isRed, Logger logger)
@@ -197,6 +219,15 @@ public class ClientManager
         IsRed = isRed;
         
         _logger = logger;
+        
+        client.OnDisconnected += HandleClientDisconnected;
+    }
+
+    private void HandleClientDisconnected(IConnectedClient client)
+    {
+        client.OnDisconnected -= HandleClientDisconnected;
+        
+        ClientDidDisconnect?.Invoke(this);
     }
 
     public async Task StartMatchForClient(UserInfo opponent)
@@ -277,6 +308,12 @@ public class ClientManager
     public async Task EndMatchForClient(int eloChange, bool won)
     {
         await ConnectedClient.SendPacket(new MatchFinishedPacket(eloChange, won));
+        await ConnectedClient.Disconnect();
+    }
+
+    public async Task DisconnectClientAbruptly(string reason)
+    { 
+        await ConnectedClient.SendPacket(new AbruptDisconnectionPacket(reason));
         await ConnectedClient.Disconnect();
     }
 }
