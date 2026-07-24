@@ -40,7 +40,7 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
                 OnUserDiscardedMaps?.Invoke(new DiscardMapsPacket([]), this);
                 break;
             case ServerPacket.ServerPacketTypes.PlayerSelectedMap:
-                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(1000000, 1000000, true, 0, false), this);
+                OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(200000, 1000000, true, 0, false), this);
                 break;
             case ServerPacket.ServerPacketTypes.StartPickPhase:
                 var pickPhasePacket = packet as StartPickPhasePacket;
@@ -49,7 +49,7 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
                     await Task.Delay(15000);
                     OnMapSelection?.Invoke(new MapSelectionPacket(mapData.GetAllMaps().First()), this);
                     await Task.Delay(5000);
-                    OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(400000, 400000, true, 0, false), this);
+                    OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(200000, 1000000, true, 0, false), this);
                 }
                 break;
         }

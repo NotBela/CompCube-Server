@@ -133,7 +133,7 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
             var redScore = client.IsRed ? score : _cachedScore;
             var blueScore = !client.IsRed ? score : _cachedScore;
         
-            var difference = Math.Abs(score.Points - _cachedScore.Points);
+            var difference = Math.Abs(score.RelativeScore - _cachedScore.RelativeScore);
         
             var loser = redScore.Points > blueScore.Points ? _blue : _red;
         
@@ -194,7 +194,7 @@ public class ClientManager
     private List<VotingMap> _availablePicks;
     public IReadOnlyList<VotingMap> AvailablePicks => _availablePicks;
     
-    public int Health { get; private set; } = 1000000;
+    public float Health { get; private set; } = 1f;
 
     public readonly bool IsRed;
 
@@ -240,7 +240,7 @@ public class ClientManager
         await ConnectedClient.SendPacket(new MatchCreatedPacket(red, blue, AvailablePicks.ToArray()));
     }
 
-    public async Task SendRoundResults(Score red, Score blue, int redHealth, int blueHealth)
+    public async Task SendRoundResults(Score red, Score blue, float redHealth, float blueHealth)
     {
         await ConnectedClient.SendPacket(new RoundResultsPacket(red, blue, redHealth, blueHealth));
     }
@@ -300,9 +300,9 @@ public class ClientManager
         ConnectedClient.OnScoreSubmission += HandleClientDidSubmitScore;
     }
 
-    public void Damage(int amount, float multiplier)
+    public void Damage(float amount, float multiplier)
     {
-        Health = Math.Max(Health - (int) Math.Round(amount * multiplier, MidpointRounding.AwayFromZero), 0);
+        Health = Math.Max(Health - amount * multiplier, 0);
     }
 
     public async Task EndMatchForClient(int eloChange, bool won)
