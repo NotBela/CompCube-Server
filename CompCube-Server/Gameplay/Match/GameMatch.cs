@@ -171,10 +171,10 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
 
     private float GetMultiplierFromRound(int round)
     {
-        if (round == 2)
+        if (round <= 2)
             return 1f;
 
-        return Math.Max((float)round / 2, 1f);
+        return round * 1.5f;
     }
 
     private int ComputeEloChange(UserInfo winner, UserInfo loser)
