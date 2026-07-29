@@ -46,3 +46,4 @@
   "AllowedHosts": "*",
 }
 ```
+3. Build and run
