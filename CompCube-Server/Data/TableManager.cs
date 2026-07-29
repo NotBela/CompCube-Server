@@ -11,15 +11,16 @@ public abstract class TableManager : IDisposable
 
     protected TableManager(IConfiguration configuration)
     {
-        if (IsOpen) 
-            return;
-        var connectionString = configuration.GetSection("ConnectionStrings").GetValue<string>("DefaultConnection");
+        if (!IsOpen)
+        {
+            var connectionString = configuration.GetSection("ConnectionStrings").GetValue<string>("DefaultConnection");
         
-        Connection = new MySqlConnection(connectionString);
+            Connection = new MySqlConnection(connectionString);
         
-        Connection.Open();
+            Connection.Open();
+        }
         
-        
+        CreateInitialTables();
     }
     
     protected abstract void CreateInitialTables();
