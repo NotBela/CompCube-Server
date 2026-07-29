@@ -4,7 +4,7 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.SQL;
 
-public class RankingData(IConfiguration config, Logger logger) : TableManager
+public class RankingData(IConfiguration config, Logger logger, IConfiguration configuration) : TableManager(configuration)
 {
     public int CurrentSeason => config.GetSection("Server").GetValue("Season", 0);
     

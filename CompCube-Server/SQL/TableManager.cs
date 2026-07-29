@@ -1,45 +1,31 @@
 ﻿using System.Data;
-using System.Data.SQLite;
+using MySqlConnector;
 
 namespace CompCube_Server.SQL;
 
 public abstract class TableManager : IDisposable
 {
-    private const string DatabaseName = "Data";
-    
-    protected readonly SQLiteConnection Connection;
-
-    private static string DataFolderPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+    protected static MySqlConnection Connection = new();
 
     public bool IsOpen => Connection.State == ConnectionState.Open;
 
-    protected TableManager()
-    {
-        Connection = new($"Data Source={Path.Combine(DataFolderPath, $"{DatabaseName}.db;")}");
-        
-        Start();
-    }
-
-    private void Start()
+    protected TableManager(IConfiguration configuration)
     {
         if (IsOpen) 
             return;
-
-        Directory.CreateDirectory(DataFolderPath);
+        var connectionString = configuration.GetSection("ConnectionStrings").GetValue<string>("DefaultConnection");
+        
+        Connection = new MySqlConnection(connectionString);
         
         Connection.Open();
-        CreateInitialTables();
+        
+        
     }
     
-    public void Stop()
-    {
-        if (!IsOpen) 
-            return;
-        
-        Connection.Close();
-    }
-
     protected abstract void CreateInitialTables();
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Connection.Dispose();
+    }
 }

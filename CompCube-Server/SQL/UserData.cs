@@ -1,11 +1,9 @@
-﻿using System.Data.SQLite;
-using CompCube_Models.Models.ClientData;
-using CompCube_Models.Models.Match;
-using CompCube_Server.Divisions;
+﻿using CompCube_Models.Models.ClientData;
+using MySqlConnector;
 
 namespace CompCube_Server.SQL;
 
-public class UserData(RankingData rankingData) : TableManager
+public class UserData(RankingData rankingData, IConfiguration configuration) : TableManager(configuration)
 {
     public UserInfo? GetUserByDiscordId(string discordId)
     {
@@ -70,7 +68,7 @@ public class UserData(RankingData rankingData) : TableManager
         return userList;
     }
     
-    private UserInfo? GetUserInfoFromReader(SQLiteDataReader reader)
+    private UserInfo? GetUserInfoFromReader(MySqlDataReader reader)
     {
         var id = reader.GetString(0);
         var userName = reader.GetString(1);

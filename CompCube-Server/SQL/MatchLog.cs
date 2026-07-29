@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace CompCube_Server.SQL;
 
-public class MatchLog(UserData userData, RankingData rankingData) : TableManager
+public class MatchLog(UserData userData, IConfiguration configuration) : TableManager(configuration)
 {
     private readonly Random _random = new();
     
