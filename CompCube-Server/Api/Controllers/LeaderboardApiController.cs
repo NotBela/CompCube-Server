@@ -15,7 +15,7 @@ public class LeaderboardApiController(UserData userData) : ControllerBase
     [HttpGet("/api/leaderboard/aroundUser/{userId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<UserInfo[]> GetAroundUser(string userId)
+    public ActionResult<UserInfo[]> GetAroundUser(int userId)
     {
         var aroundUser = userData.GetAroundUser(userId);
 

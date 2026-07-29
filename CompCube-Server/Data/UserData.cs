@@ -20,7 +20,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         return null;
     }
 
-    public void LinkDiscordToUser(string userId, string discordId)
+    public void LinkDiscordToUser(int userId, string discordId)
     {
         var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
@@ -30,7 +30,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         command.ExecuteNonQuery();
     }
 
-    public UserInfo? GetUserById(string userId, int season = -1)
+    public UserInfo? GetUserById(int userId, int season = -1)
     {
         if (season == -1)
             season = rankingData.CurrentSeason;
@@ -70,7 +70,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     
     private UserInfo? GetUserInfoFromReader(MySqlDataReader reader)
     {
-        var id = reader.GetString(0);
+        var id = reader.GetInt32(0);
         var userName = reader.GetString(1);
         Badge? badge = null;
         
@@ -122,7 +122,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     }
 
     // fixed. i think
-    public UserInfo[]? GetAroundUser(string userId)
+    public UserInfo[]? GetAroundUser(int userId)
     {
         var users = GetAllUsers().Where(i => !i.Banned).ToArray();
 
@@ -149,7 +149,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         return users;
     }
     
-    public UserInfo UpdateUserDataOnLogin(string userId, string userName)
+    public UserInfo UpdateUserDataOnLogin(int userId, string userName)
     {
         rankingData.CreateRankingDataForUserIfNotExists(userId);
         
