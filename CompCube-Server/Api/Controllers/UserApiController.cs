@@ -11,7 +11,7 @@ public class UserApiController(UserData userData, Logger logger) : ControllerBas
     [HttpGet("/api/user/id/{id}")]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<UserInfo> GetUserById(int id)
+    public ActionResult<UserInfo> GetUserById(string id)
     {
         var user = userData.GetUserById(id);
         

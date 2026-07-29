@@ -11,7 +11,7 @@ namespace CompCube_Server.Discord.Commands;
 public class UserCommands(UserData userData) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("link", "Link your discord account to your LoungeSaber profile!")]
-    public string Link(int scoresaberId)
+    public string Link(string scoresaberId)
     {
         if (userData.GetUserByDiscordId(Context.User.Id.ToString()) != null)
             return "This user is already linked to a discord account.";
@@ -27,11 +27,11 @@ public class UserCommands(UserData userData) : ApplicationCommandModule<Applicat
     }
 
     [SlashCommand("profile", "View the profile of yourself or another user")]
-    public InteractionMessageProperties ProfileByUser(User? user = null, int? id = null)
+    public InteractionMessageProperties ProfileByUser(User? user = null, string? id = null)
     {
         if (id != null)
         {
-            var userById = userData.GetUserById(id ?? -1);
+            var userById = userData.GetUserById(id);
             return GetUserProfileMessage(userById);
         }
         
