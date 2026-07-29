@@ -24,7 +24,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     {
         var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
-        command.Parameters.AddWithValue("userId", userId);
+        command.Parameters.AddWithValue("userId", ulong.Parse(userId));
         command.Parameters.AddWithValue("discordId", discordId);
 
         command.ExecuteNonQuery();
@@ -37,7 +37,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         
         var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE userData.id = @id AND rankingData.season = @season LIMIT 1";
-        command.Parameters.AddWithValue("id", userId);
+        command.Parameters.AddWithValue("id", ulong.Parse(userId));
         command.Parameters.AddWithValue("season", season);
         using var reader = command.ExecuteReader();
 
@@ -155,7 +155,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         
         using var addToUserDataCommand = Connection.CreateCommand();
         addToUserDataCommand.CommandText = "INSERT OR IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
-        addToUserDataCommand.Parameters.AddWithValue("@userId", userId);
+        addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
         addToUserDataCommand.ExecuteNonQuery();
 
@@ -171,7 +171,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     private void CreateBadgeTable()
     {
         var command = Connection.CreateCommand();
-        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL PRIMARY KEY, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
+        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
         command.ExecuteNonQuery();
     }
     
@@ -179,10 +179,10 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     {
         var dbCommand = Connection.CreateCommand();
         dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (" +
-                                "id TEXT NOT NULL PRIMARY KEY, " +
+                                "id SERIAL NOT NULL PRIMARY KEY, " +
                                 "username TEXT NOT NULL, " +
                                 "badge TEXT, " +
-                                "discordID TEXT UNIQUE, " +
+                                "discordID TEXT, " +
                                 "banned BOOLEAN NOT NULL)";
         dbCommand.ExecuteNonQuery();
     }
