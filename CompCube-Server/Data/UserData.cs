@@ -70,7 +70,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     
     private UserInfo? GetUserInfoFromReader(MySqlDataReader reader)
     {
-        var id = reader.GetString(0);
+        var id = reader.GetUInt64(0);
         var userName = reader.GetString(1);
         Badge? badge = null;
         
@@ -95,7 +95,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         rankCommand.Parameters.AddWithValue("@mmrThreshold", mmr);
         var rank = (long) (rankCommand.ExecuteScalar() ?? -1) + 1;
 
-        return new UserInfo(userName, id, mmr, badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
+        return new UserInfo(userName, id.ToString(), mmr, badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
     }
 
     private Badge? GetBadge(string? badgeName)
@@ -153,11 +153,12 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     {
         rankingData.CreateRankingDataForUserIfNotExists(userId);
         
-        using var addToUserDataCommand = Connection.CreateCommand();
-        addToUserDataCommand.CommandText = "INSERT OR IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
+        var addToUserDataCommand = Connection.CreateCommand();
+        addToUserDataCommand.CommandText = "INSERT IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
         addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
         addToUserDataCommand.ExecuteNonQuery();
+        addToUserDataCommand.Dispose();
 
         return GetUserById(userId) ?? throw new Exception("Could not find updated user!");
     }

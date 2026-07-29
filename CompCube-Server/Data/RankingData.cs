@@ -4,9 +4,10 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.SQL;
 
-public class RankingData(IConfiguration config, Logger logger, IConfiguration configuration) : TableManager(configuration)
+public class RankingData(IConfiguration config, Logger logger) : TableManager(config)
 {
-    public int CurrentSeason => config.GetSection("Server").GetValue("Season", 0);
+    private readonly IConfiguration _config = config;
+    public int CurrentSeason => _config.GetSection("Server").GetValue("Season", 0);
     
     protected override void CreateInitialTables()
     {
