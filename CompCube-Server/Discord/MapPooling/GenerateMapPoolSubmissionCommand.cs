@@ -31,11 +31,4 @@ public class GenerateMapPoolSubmissionCommand() : ApplicationCommandModule<Appli
             ]
         };
     }
-
-    [ComponentInteraction("submitMapButton")]
-    public async Task SubmitMapButton(IInteractionContext context, IResult result)
-    {
-        await context.Interaction.Channel.SendMessageAsync("test done!");
-    }
-    
 }
