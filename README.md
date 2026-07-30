@@ -1,11 +1,13 @@
 # Contributing
+> [!WARNING]
+> This guide assumes that you already have a functional MySQL Server set up.
 
-Prerequisites:
-- MySQL Server (8 or later)
-
-Steps:
 1. `git clone`
-2. Create a file called appsettings.json in CompCube-Server/bin/Release/net10.0 and paste the following into it:
+2. Build
+3. Follow the steps in the Setup section
+
+# Setup
+Create a file called appsettings.json in CompCube-Server/bin/Release/net10.0 and paste the following into it. Make sure to populate the DefaultConnection field!
 ```json
 {
   // Discord configuration. Leave UseDiscordIntegration disabled if you do not plan on contributing to the discord bot! 
@@ -43,7 +45,7 @@ Steps:
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  // Connection string to connect to a database. Point this to your MySQL Server
+  // Connection string to connect to a database.
   "ConnectionStrings": {
     "DefaultConnection": ""
   },
@@ -51,4 +53,6 @@ Steps:
   "AllowedHosts": "*",
 }
 ```
-3. Build and run
+
+> [!WARNING]
+> In order to start a match properly, at least 7 maps must be present in the database.
