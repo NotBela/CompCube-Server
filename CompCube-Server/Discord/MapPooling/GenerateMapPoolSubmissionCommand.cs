@@ -26,7 +26,7 @@ public class GenerateMapPoolSubmissionCommand() : ApplicationCommandModule<Appli
             [
                 new ActionRowProperties()
                 {
-                    new ButtonProperties("submitMapButton", "Submit from BeatSaver", ButtonStyle.Primary)
+                    new ButtonProperties("submitMapFromBeatSaverButton", "Submit from BeatSaver", ButtonStyle.Primary)
                 }
             ]
         };

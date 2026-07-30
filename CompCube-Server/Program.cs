@@ -33,7 +33,7 @@ public class Program
         InstallBindings(builder.Services);
         
         if (_useDiscordIntegration)
-            builder.Services.AddDiscordGateway().AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>();
+            builder.Services.AddDiscordGateway().AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>().AddComponentInteractions<ModalInteraction, ModalInteractionContext>();
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();

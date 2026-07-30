@@ -7,14 +7,12 @@ namespace CompCube_Server.Discord.MapPooling;
 
 public class MapPoolButtonInteractionModule : ComponentInteractionModule<ButtonInteractionContext>
 {
-    [ComponentInteraction("submitMapFromBeatsaverButton")]
+    [ComponentInteraction("submitMapFromBeatSaverButton")]
     public async Task SubmitMapFromBeatSaverInteraction()
     {
-        var enumValues = Enum.GetValues<VotingMap.Category>().Select(i => new StringMenuSelectOptionProperties(i.ToString(), i.ToString()));
-        
         var modal = new ModalProperties("submitMapFromBeatsaverModal", "Submit From BeatSaver")
         {
-            Components = [new StringMenuProperties("categoryMenu", enumValues)]
+            Components = [new TextInputProperties("categoryMenu", TextInputStyle.Short,"test")]
         };
         
         await Context.Interaction.SendResponseAsync(InteractionCallback.Modal(modal));
