@@ -1,11 +1,5 @@
-using System.Net.Mime;
-using System.Net.WebSockets;
-using System.Reflection;
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
-using CompCube_Server.Discord;
-using CompCube_Server.Discord.Commands;
-using CompCube_Server.Discord.Events;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
@@ -135,8 +129,5 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
-        
-        services.AddSingleton<UserCommands>();
-        services.AddSingleton<ServerCommands>();
     }
 }

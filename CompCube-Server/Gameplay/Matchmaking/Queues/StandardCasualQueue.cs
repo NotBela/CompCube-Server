@@ -1,5 +1,4 @@
 ﻿using CompCube_Models.Models.Match;
-using CompCube_Server.Discord.Events;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
