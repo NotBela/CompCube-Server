@@ -7,10 +7,13 @@ using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
 using CompCube_Server.SQL;
+using NetCord;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
 using NetCord.Hosting.Services.Commands;
+using NetCord.Hosting.Services.ComponentInteractions;
+using NetCord.Services.ComponentInteractions;
 
 namespace CompCube_Server;
 
@@ -30,7 +33,7 @@ public class Program
         InstallBindings(builder.Services);
         
         if (_useDiscordIntegration)
-            builder.Services.AddDiscordGateway().AddApplicationCommands();
+            builder.Services.AddDiscordGateway().AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>();
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
