@@ -2,7 +2,6 @@
 using CompCube_Server.SQL;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
-using RomanNumerals;
 
 namespace CompCube_Server.Discord.Commands;
 

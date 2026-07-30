@@ -39,6 +39,8 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        
+        Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps"));
 
         var webSocketPort = builder.Configuration.GetSection("Server").GetValue("WebsocketListeningPort", -1);
 
@@ -107,10 +109,13 @@ public class Program
     {
         services.AddSingleton<Logger>();
         
-        services.AddSingleton<MatchLog>();
-        services.AddSingleton<MapData>();
-        services.AddSingleton<UserData>();
-        services.AddSingleton<RankingData>();
+        services.AddTransient<MatchLog>();
+        services.AddTransient<MapData>();
+        services.AddTransient<UserData>();
+        services.AddTransient<RankingData>();
+        services.AddTransient<RankFetcher>();
+
+        services.AddTransient<DbSession>();
 
         services.AddSingleton<ServerStatusManager>();
         

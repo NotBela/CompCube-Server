@@ -1,11 +1,9 @@
-﻿using System.Data.SQLite;
-using CompCube_Models.Models.ClientData;
-using CompCube_Models.Models.Match;
-using CompCube_Server.Divisions;
+﻿using CompCube_Models.Models.ClientData;
+using MySqlConnector;
 
 namespace CompCube_Server.SQL;
 
-public class UserData(RankingData rankingData) : TableManager
+public class UserData(RankingData rankingData, IConfiguration configuration) : TableManager(configuration)
 {
     public UserInfo? GetUserByDiscordId(string discordId)
     {
@@ -26,7 +24,7 @@ public class UserData(RankingData rankingData) : TableManager
     {
         var command = Connection.CreateCommand();
         command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
-        command.Parameters.AddWithValue("userId", userId);
+        command.Parameters.AddWithValue("userId", ulong.Parse(userId));
         command.Parameters.AddWithValue("discordId", discordId);
 
         command.ExecuteNonQuery();
@@ -39,7 +37,7 @@ public class UserData(RankingData rankingData) : TableManager
         
         var command = Connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE userData.id = @id AND rankingData.season = @season LIMIT 1";
-        command.Parameters.AddWithValue("id", userId);
+        command.Parameters.AddWithValue("id", ulong.Parse(userId));
         command.Parameters.AddWithValue("season", season);
         using var reader = command.ExecuteReader();
 
@@ -70,9 +68,9 @@ public class UserData(RankingData rankingData) : TableManager
         return userList;
     }
     
-    private UserInfo? GetUserInfoFromReader(SQLiteDataReader reader)
+    private UserInfo? GetUserInfoFromReader(MySqlDataReader reader)
     {
-        var id = reader.GetString(0);
+        var id = reader.GetUInt64(0);
         var userName = reader.GetString(1);
         Badge? badge = null;
         
@@ -83,21 +81,12 @@ public class UserData(RankingData rankingData) : TableManager
         
         if (!reader.IsDBNull(3))
             discordId = reader.GetString(3);
-        
         var banned = reader.GetBoolean(4);
-        var mmr = reader.GetInt32(6);
-        var wins = reader.GetInt32(7);
-        var totalGames = reader.GetInt32(8);
-        var winstreak = reader.GetInt32(9);
-        var bestWinstreak = reader.GetInt32(10);
 
-        using var rankCommand = Connection.CreateCommand();
-        rankCommand.CommandText = "SELECT COUNT(*) FROM userData JOIN rankingData USING (id) WHERE mmr > @mmrThreshold AND banned = false AND season = @season ORDER BY mmr";
-        rankCommand.Parameters.AddWithValue("@season", rankingData.CurrentSeason);
-        rankCommand.Parameters.AddWithValue("@mmrThreshold", mmr);
-        var rank = (long) (rankCommand.ExecuteScalar() ?? -1) + 1;
+        var rankData = rankingData.GetRankingData(id.ToString());
+        
 
-        return new UserInfo(userName, id, mmr, badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
+        return new UserInfo(userName, id.ToString(), rankData.Elo, badge, rankData.Rank, discordId, banned, rankData.Wins, rankData.TotalGames, rankData.Winstreak, rankData.BestWinstreak);
     }
 
     private Badge? GetBadge(string? badgeName)
@@ -156,8 +145,8 @@ public class UserData(RankingData rankingData) : TableManager
         rankingData.CreateRankingDataForUserIfNotExists(userId);
         
         using var addToUserDataCommand = Connection.CreateCommand();
-        addToUserDataCommand.CommandText = "INSERT OR IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
-        addToUserDataCommand.Parameters.AddWithValue("@userId", userId);
+        addToUserDataCommand.CommandText = "INSERT IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
+        addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
         addToUserDataCommand.ExecuteNonQuery();
 
@@ -173,7 +162,7 @@ public class UserData(RankingData rankingData) : TableManager
     private void CreateBadgeTable()
     {
         var command = Connection.CreateCommand();
-        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL PRIMARY KEY, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
+        command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
         command.ExecuteNonQuery();
     }
     
@@ -181,10 +170,10 @@ public class UserData(RankingData rankingData) : TableManager
     {
         var dbCommand = Connection.CreateCommand();
         dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (" +
-                                "id TEXT NOT NULL PRIMARY KEY, " +
+                                "id SERIAL NOT NULL PRIMARY KEY, " +
                                 "username TEXT NOT NULL, " +
                                 "badge TEXT, " +
-                                "discordID TEXT UNIQUE, " +
+                                "discordID TEXT, " +
                                 "banned BOOLEAN NOT NULL)";
         dbCommand.ExecuteNonQuery();
     }
