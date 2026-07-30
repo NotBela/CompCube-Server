@@ -136,14 +136,7 @@ public class Program
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
         
-        services.AddSingleton<MatchInfoMessageFormatter>();
         services.AddSingleton<UserCommands>();
         services.AddSingleton<ServerCommands>();
-        services.AddSingleton<MatchCommands>();
-
-        if (_useDiscordIntegration)
-            services.AddSingleton<IDiscordBot, DiscordBot>();
-        else
-            services.AddSingleton<IDiscordBot, DummyDiscordBot>();
     }
 }
