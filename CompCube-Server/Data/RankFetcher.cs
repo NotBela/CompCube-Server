@@ -1,4 +1,6 @@
-﻿namespace CompCube_Server.SQL;
+﻿using NetCord.Rest;
+
+namespace CompCube_Server.SQL;
 
 public class RankFetcher(DbSession db, IConfiguration configuration)
 {

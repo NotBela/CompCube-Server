@@ -1,12 +1,19 @@
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
-using CompCube_Server.Discord;
+using CompCube_Server.Discord.MapPooling;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
 using CompCube_Server.SQL;
+using NetCord;
+using NetCord.Hosting.Gateway;
+using NetCord.Hosting.Services;
+using NetCord.Hosting.Services.ApplicationCommands;
+using NetCord.Hosting.Services.Commands;
+using NetCord.Hosting.Services.ComponentInteractions;
+using NetCord.Services.ComponentInteractions;
 
 namespace CompCube_Server;
 
@@ -24,7 +31,9 @@ public class Program
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
         
         InstallBindings(builder.Services);
-            
+        
+        if (_useDiscordIntegration)
+            builder.Services.AddDiscordGateway().AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>();
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
@@ -59,11 +68,14 @@ public class Program
         host.UseSwagger();
         host.UseSwaggerUI();
 
-        if (_useDiscordIntegration)
-            host.Services.GetRequiredService<DiscordBotManager>();
-
         // host.UseHttpsRedirection();
         host.MapControllers();
+
+        if (_useDiscordIntegration)
+        {
+            host.AddModules(typeof(Program).Assembly);
+            host.UseGatewayHandlers();
+        }
         
         var connectionManager = host.Services.GetRequiredService<ConnectionManager>();
 
@@ -122,10 +134,5 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
-
-        if (_useDiscordIntegration)
-        {
-            services.AddSingleton<DiscordBotManager>();
-        }
     }
 }
