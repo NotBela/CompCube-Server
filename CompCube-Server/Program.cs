@@ -39,6 +39,8 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        
+        Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps"));
 
         var webSocketPort = builder.Configuration.GetSection("Server").GetValue("WebsocketListeningPort", -1);
 
