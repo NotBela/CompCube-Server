@@ -81,21 +81,12 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         
         if (!reader.IsDBNull(3))
             discordId = reader.GetString(3);
-        
         var banned = reader.GetBoolean(4);
-        var mmr = reader.GetInt32(6);
-        var wins = reader.GetInt32(7);
-        var totalGames = reader.GetInt32(8);
-        var winstreak = reader.GetInt32(9);
-        var bestWinstreak = reader.GetInt32(10);
 
-        using var rankCommand = Connection.CreateCommand();
-        rankCommand.CommandText = "SELECT COUNT(*) FROM userData JOIN rankingData USING (id) WHERE mmr > @mmrThreshold AND banned = false AND season = @season ORDER BY mmr";
-        rankCommand.Parameters.AddWithValue("@season", rankingData.CurrentSeason);
-        rankCommand.Parameters.AddWithValue("@mmrThreshold", mmr);
-        var rank = (long) (rankCommand.ExecuteScalar() ?? -1) + 1;
+        var rankData = rankingData.GetRankingData(id.ToString());
+        
 
-        return new UserInfo(userName, id.ToString(), mmr, badge, rank, discordId, banned, wins, totalGames, winstreak, bestWinstreak);
+        return new UserInfo(userName, id.ToString(), rankData.Elo, badge, rankData.Rank, discordId, banned, rankData.Wins, rankData.TotalGames, rankData.Winstreak, rankData.BestWinstreak);
     }
 
     private Badge? GetBadge(string? badgeName)
@@ -153,12 +144,11 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     {
         rankingData.CreateRankingDataForUserIfNotExists(userId);
         
-        var addToUserDataCommand = Connection.CreateCommand();
+        using var addToUserDataCommand = Connection.CreateCommand();
         addToUserDataCommand.CommandText = "INSERT IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
         addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
         addToUserDataCommand.ExecuteNonQuery();
-        addToUserDataCommand.Dispose();
 
         return GetUserById(userId) ?? throw new Exception("Could not find updated user!");
     }

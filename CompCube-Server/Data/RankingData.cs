@@ -4,7 +4,7 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.SQL;
 
-public class RankingData(IConfiguration config, Logger logger) : TableManager(config)
+public class RankingData(IConfiguration config, Logger logger, RankFetcher rankFetcher) : TableManager(config)
 {
     private readonly IConfiguration _config = config;
     public int CurrentSeason => _config.GetSection("Server").GetValue("Season", 0);
@@ -92,4 +92,36 @@ public class RankingData(IConfiguration config, Logger logger) : TableManager(co
         command.Parameters.AddWithValue("@season", CurrentSeason);
         command.ExecuteNonQuery();
     }
+
+    public RankData GetRankingData(string userId)
+    {
+        using var command = Connection.CreateCommand();
+        
+        command.CommandText = "SELECT * FROM rankingData WHERE id = @id AND season = @season";
+        command.Parameters.AddWithValue("@id", ulong.Parse(userId));
+        command.Parameters.AddWithValue("@season", CurrentSeason);
+
+        using var reader = command.ExecuteReader();
+
+        var elo = -1;
+        var wins = -1;
+        var totalGames = -1;
+        var winstreak = -1;
+        var bestWinstreak = -1;
+
+        while (reader.Read())
+        {
+            elo = reader.GetInt32(2);
+            wins = reader.GetInt32(3);
+            totalGames = reader.GetInt32(4);
+            winstreak = reader.GetInt32(5);
+            bestWinstreak = reader.GetInt32(6);
+        }
+        
+        var rank = rankFetcher.GetRankFromElo(elo);
+
+        return new((int) rank, elo, wins, totalGames, winstreak, bestWinstreak);
+    }
+    
+    
 }

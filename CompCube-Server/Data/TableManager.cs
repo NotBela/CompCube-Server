@@ -5,20 +5,15 @@ namespace CompCube_Server.SQL;
 
 public abstract class TableManager : IDisposable
 {
-    protected static MySqlConnection Connection = new();
-
-    public bool IsOpen => Connection.State == ConnectionState.Open;
+    protected readonly MySqlConnection Connection;
 
     protected TableManager(IConfiguration configuration)
     {
-        if (!IsOpen)
-        {
-            var connectionString = configuration.GetSection("ConnectionStrings").GetValue<string>("DefaultConnection");
+        var connectionString = configuration.GetSection("ConnectionStrings").GetValue<string>("DefaultConnection");
         
-            Connection = new MySqlConnection(connectionString);
+        Connection = new MySqlConnection(connectionString);
         
-            Connection.Open();
-        }
+        Connection.Open();
         
         CreateInitialTables();
     }

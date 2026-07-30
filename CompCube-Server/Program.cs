@@ -107,10 +107,13 @@ public class Program
     {
         services.AddSingleton<Logger>();
         
-        services.AddSingleton<MatchLog>();
-        services.AddSingleton<MapData>();
-        services.AddSingleton<UserData>();
-        services.AddSingleton<RankingData>();
+        services.AddTransient<MatchLog>();
+        services.AddTransient<MapData>();
+        services.AddTransient<UserData>();
+        services.AddTransient<RankingData>();
+        services.AddTransient<RankFetcher>();
+
+        services.AddTransient<DbSession>();
 
         services.AddSingleton<ServerStatusManager>();
         
