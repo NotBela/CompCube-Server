@@ -1,5 +1,6 @@
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
+using CompCube_Server.Discord.MapPooling;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
@@ -9,6 +10,7 @@ using CompCube_Server.SQL;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
+using NetCord.Hosting.Services.Commands;
 
 namespace CompCube_Server;
 
@@ -20,7 +22,7 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
         {
-            ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
+            // ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
         });
 
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
