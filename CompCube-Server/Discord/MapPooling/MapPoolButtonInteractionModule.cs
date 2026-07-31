@@ -10,10 +10,16 @@ public class MapPoolButtonInteractionModule : ComponentInteractionModule<ButtonI
     [ComponentInteraction("submitMapFromBeatSaverButton")]
     public async Task SubmitMapFromBeatSaverInteraction()
     {
+        var options = Enum.GetNames<VotingMap.Category>().Select(i => new StringMenuSelectOptionProperties(i, i));
+        
         var modal = new ModalProperties("submitMapFromBeatsaverModal", "Submit From BeatSaver")
         {
-            Components = [new TextInputProperties("categoryMenu", TextInputStyle.Short,"test")]
+            Components = [
+                new LabelProperties("Category", new StringMenuProperties("category", options)),
+                new LabelProperties("BSR", new TextInputProperties("bsr", TextInputStyle.Short)),
+            ]
         };
+        
         
         await Context.Interaction.SendResponseAsync(InteractionCallback.Modal(modal));
     }

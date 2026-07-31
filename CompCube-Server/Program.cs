@@ -74,7 +74,6 @@ public class Program
         if (_useDiscordIntegration)
         {
             host.AddModules(typeof(Program).Assembly);
-            host.UseGatewayHandlers();
         }
         
         var connectionManager = host.Services.GetRequiredService<ConnectionManager>();

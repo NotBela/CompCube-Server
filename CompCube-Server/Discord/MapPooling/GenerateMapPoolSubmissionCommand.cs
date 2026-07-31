@@ -9,7 +9,7 @@ namespace CompCube_Server.Discord.MapPooling;
 
 public class GenerateMapPoolSubmissionCommand() : ApplicationCommandModule<ApplicationCommandContext>
 {
-    [SlashCommand("createmapsubmissionmessage", "Create a new map submission message", DefaultGuildUserPermissions = Permissions.Administrator)]
+    [SlashCommand("createmapsubmissionmessage", "Create a new map submission message", DefaultGuildPermissions = Permissions.Administrator)]
     public InteractionMessageProperties CreateMapSubmissionMessage()
     {
         return new InteractionMessageProperties()
