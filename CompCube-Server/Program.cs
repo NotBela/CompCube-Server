@@ -1,5 +1,6 @@
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
+using CompCube_Server.Discord;
 using CompCube_Server.Discord.MapPooling;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
@@ -133,5 +134,7 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
+
+        services.AddSingleton<DiscordConfigHelper>();
     }
 }
