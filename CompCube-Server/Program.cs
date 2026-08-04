@@ -2,6 +2,7 @@ using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
 using CompCube_Server.Discord;
 using CompCube_Server.Discord.MapPooling;
+using CompCube_Server.Discord.MapPooling.Voting;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
@@ -9,6 +10,7 @@ using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
 using CompCube_Server.SQL;
 using NetCord;
+using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
@@ -34,7 +36,7 @@ public class Program
         InstallBindings(builder.Services);
         
         if (_useDiscordIntegration)
-            builder.Services.AddDiscordGateway().AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>().AddComponentInteractions<ModalInteraction, ModalInteractionContext>();
+            builder.Services.AddDiscordGateway(options => options.Intents = GatewayIntents.All).AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>().AddComponentInteractions<ModalInteraction, ModalInteractionContext>().AddGatewayHandlers(typeof(Program).Assembly);
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
@@ -136,5 +138,6 @@ public class Program
         services.AddSingleton<UserApiController>();
 
         services.AddSingleton<DiscordConfigHelper>();
+        services.AddSingleton<VoteCalculator>();
     }
 }

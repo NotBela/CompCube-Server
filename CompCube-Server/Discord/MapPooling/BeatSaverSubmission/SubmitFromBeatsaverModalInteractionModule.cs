@@ -1,4 +1,5 @@
 ﻿using CompCube_Server.Api.BeatSaver;
+using CompCube_Server.Extensions;
 using CompCube_Server.Logging;
 using NetCord;
 using NetCord.Rest;
@@ -67,7 +68,7 @@ public class SubmitFromBeatsaverModalInteractionModule(IConfiguration config, Re
                     {
                         Inline = true,
                         Name = "Submitted by:",
-                        Value = $"<@{Context.User.Id}>"
+                        Value = Context.User.GetMention()
                     },
                     new EmbedFieldProperties()
                     {

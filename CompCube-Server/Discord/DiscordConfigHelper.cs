@@ -6,6 +6,11 @@ public class DiscordConfigHelper(IConfiguration config)
 {
     private readonly Dictionary<string, ulong> _roleIds =
         config.GetSection("Discord").GetSection("RoleIds").AsEnumerable().TakeLast(config.GetSection("Discord").GetSection("RoleIds").AsEnumerable().ToArray().Length - 1).Select(i => new KeyValuePair<string,ulong>(i.Key["Discord:RoleIds:".Length..], ulong.Parse(i.Value ?? "0"))).ToDictionary();
+
+    public readonly Dictionary<VotingMap.Category, ulong> ForumChannels =
+        config.GetSection("Discord").GetSection("PoolingChannelIds").AsEnumerable().TakeLast(Enum.GetNames<VotingMap.Category>().Length - 1).Select(i => new KeyValuePair<VotingMap.Category,ulong>(Enum.Parse<VotingMap.Category>(i.Key["Discord:PoolingChannelIds:".Length..]), ulong.Parse(i.Value ?? "0"))).ToDictionary();
+    
+    public ulong GuildId => config.GetSection("Discord").GetValue<ulong>("GuildId");
     
     public ulong GetChannelForCategory(VotingMap.Category category)
     {
