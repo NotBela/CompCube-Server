@@ -85,8 +85,23 @@ public class SubmitFromBeatsaverModalInteractionModule(IConfiguration config, Re
                 ]
             }]
         }));
-        
-        
+
+        await forumThread.SendMessageAsync(new MessageProperties()
+        {
+            Content = $"<@&{1438697609383514163}>",
+            AllowedMentions = new AllowedMentionsProperties()
+            {
+                AllowedRoles = [1438697609383514163],
+                AllowedUsers = null
+            },
+            
+            Embeds = [
+                new EmbedProperties()
+                {
+                    Description = $"React to this forum post to vote on this map\n👍 to upvote\n👎 to downvote",
+                }
+            ]
+        });
     }
 
     private async Task SendEmptyResponse() => await RespondAsync(InteractionCallback.DeferredModifyMessage);

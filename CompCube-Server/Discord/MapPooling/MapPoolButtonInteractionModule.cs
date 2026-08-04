@@ -11,7 +11,11 @@ public class MapPoolButtonInteractionModule(DiscordConfigHelper configHelper) : 
     [ComponentInteraction("submitMapFromBeatSaverButton")]
     public async Task SubmitMapFromBeatSaverInteraction()
     {
-        var categoryOptions = Enum.GetNames<VotingMap.Category>().Select(i => new StringMenuSelectOptionProperties(i, i));
+        var guildUser = await Context.Guild?.GetUserAsync(Context.User.Id)!;
+
+        var roles = guildUser.RoleIds.ToArray();
+        
+        var categoryOptions = configHelper.GetCategoriesFromRoles(roles).Select(i => new StringMenuSelectOptionProperties(i.ToString(), i.ToString()));
         var difficultyOptions = Enum.GetNames<VotingMap.DifficultyType>().Select(j => new StringMenuSelectOptionProperties(j, j));
         
         var modal = new ModalProperties("submitMapFromBeatsaverModal", "Submit From BeatSaver")

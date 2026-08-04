@@ -4,27 +4,23 @@ namespace CompCube_Server.Discord;
 
 public class DiscordConfigHelper(IConfiguration config)
 {
-    private readonly Dictionary<string, ulong> _roleIds =
-        config.GetSection("Discord").GetSection("RoleIds").AsEnumerable().TakeLast(config.GetSection("Discord").GetSection("RoleIds").AsEnumerable().ToArray().Length - 1).Select(i => new KeyValuePair<string,ulong>(i.Key["Discord:RoleIds:".Length..], ulong.Parse(i.Value ?? "0"))).ToDictionary();
+    private Dictionary<VotingMap.Category, ulong> _roleIds => Enum.GetValues<VotingMap.Category>().Where(i => i != VotingMap.Category.Special).Select(i => new KeyValuePair<VotingMap.Category, ulong>(i, config.GetSection("Discord").GetSection("RoleIds").GetValue<ulong>(i.ToString()))).ToDictionary();
+    public Dictionary<VotingMap.Category, ulong> ForumChannels => Enum.GetValues<VotingMap.Category>().Select(i => new KeyValuePair<VotingMap.Category,ulong>(i, config.GetSection("Discord").GetSection("ForumChannels").GetValue<ulong>(i.ToString()))).ToDictionary();
 
-    public readonly Dictionary<VotingMap.Category, ulong> ForumChannels =
-        config.GetSection("Discord").GetSection("PoolingChannelIds").AsEnumerable().TakeLast(Enum.GetNames<VotingMap.Category>().Length - 1).Select(i => new KeyValuePair<VotingMap.Category,ulong>(Enum.Parse<VotingMap.Category>(i.Key["Discord:PoolingChannelIds:".Length..]), ulong.Parse(i.Value ?? "0"))).ToDictionary();
+    public ulong MasterPoolerRoleId => config.GetSection("Discord").GetSection("RoleIds").GetValue<ulong>("MasterPooler");
+    
+    public ulong PoolerRoleId => config.GetSection("Discord").GetSection("RoleIds").GetValue<ulong>("Pooler");
     
     public ulong GuildId => config.GetSection("Discord").GetValue<ulong>("GuildId");
-    
-    public ulong GetChannelForCategory(VotingMap.Category category)
-    {
-        return config.GetSection("Discord").GetSection("PoolingChannelIds").GetValue<ulong>(category.ToString());
-    }
 
-    public string[] GetCategoryOptionsFromRoles(ulong[]? roleIds)
+    public VotingMap.Category[] GetCategoriesFromRoles(ulong[]? roleIds)
     {
         if (roleIds == null)
             return [];
-        
-        if (roleIds.Contains(_roleIds["MasterPooler"]))
-            return Enum.GetNames<VotingMap.Category>();
 
-        return _roleIds.Where(i => _roleIds.ContainsValue(i.Value)).Select(i => i.Key).Where(i => i != "MasterPooler" && i != "GeneralPooler").ToArray();
+        if (roleIds.Contains(MasterPoolerRoleId))
+            return Enum.GetValues<VotingMap.Category>();
+
+        return _roleIds.Where(i => roleIds.Contains(i.Value)).Select(i => i.Key).ToArray();
     }
 }
