@@ -3,7 +3,7 @@ using NetCord.Rest;
 
 namespace CompCube_Server.Discord.MapPooling.Voting;
 
-public class VoteCalculator(RestClient restClient, DiscordConfigHelper config)
+public class MapVoteHelper(RestClient restClient, DiscordConfigHelper config)
 {
     public async Task<MapThreadUpvotes> GetUpvotesFromThread(ulong threadId)
     {

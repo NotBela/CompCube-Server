@@ -138,6 +138,6 @@ public class Program
         services.AddSingleton<UserApiController>();
 
         services.AddSingleton<DiscordConfigHelper>();
-        services.AddSingleton<VoteCalculator>();
+        services.AddSingleton<MapVoteHelper>();
     }
 }

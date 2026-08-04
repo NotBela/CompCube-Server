@@ -4,7 +4,7 @@ using NetCord.Rest;
 
 namespace CompCube_Server.Discord.MapPooling.Voting.Events;
 
-public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper config, VoteCalculator voteCalculator) : IMessageReactionAddGatewayHandler
+public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper config, MapVoteHelper mapVoteHelper) : IMessageReactionAddGatewayHandler
 {
     public async ValueTask HandleAsync(MessageReactionAddEventArgs args)
     {
@@ -12,7 +12,7 @@ public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper co
         
         var forumThread = threads.First(i => i.Id == args.ChannelId);
 
-        var owner = await voteCalculator.GetOwnerFromThread(forumThread);
+        var owner = await mapVoteHelper.GetOwnerFromThread(forumThread);
 
         if (owner.Id != args.UserId)
             return;

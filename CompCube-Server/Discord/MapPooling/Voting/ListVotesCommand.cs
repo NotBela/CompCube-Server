@@ -4,12 +4,12 @@ using NetCord.Services.ApplicationCommands;
 
 namespace CompCube_Server.Discord.MapPooling.Voting;
 
-public class ListVotesCommand(VoteCalculator voteCalculator) : ApplicationCommandModule<ApplicationCommandContext>
+public class ListVotesCommand(MapVoteHelper mapVoteHelper) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("votes", "List the votes on a map thread")]
     public async Task<InteractionMessageProperties> ListVotes()
     {
-        var votes = await voteCalculator.GetUpvotesFromThread(Context.Channel.Id);
+        var votes = await mapVoteHelper.GetUpvotesFromThread(Context.Channel.Id);
         
         return new InteractionMessageProperties()
         {
