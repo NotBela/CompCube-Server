@@ -137,7 +137,11 @@ public class Program
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
 
+        if (!_useDiscordIntegration) 
+            return;
+        
         services.AddSingleton<DiscordConfigHelper>();
         services.AddSingleton<MapVoteHelper>();
+        services.AddSingleton<ForumChecker>();
     }
 }

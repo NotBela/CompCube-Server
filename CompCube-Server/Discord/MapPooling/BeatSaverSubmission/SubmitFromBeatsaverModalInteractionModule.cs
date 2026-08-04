@@ -98,7 +98,7 @@ public class SubmitFromBeatsaverModalInteractionModule(IConfiguration config, Re
             Embeds = [
                 new EmbedProperties()
                 {
-                    Description = $"React to this forum post to vote on this map\n👍 to upvote\n👎 to downvote",
+                    Description = $"React to the forum post to vote on the map\n👍 to upvote\n👎 to downvote",
                 }
             ]
         });
