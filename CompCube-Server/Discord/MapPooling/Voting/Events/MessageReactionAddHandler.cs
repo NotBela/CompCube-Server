@@ -10,7 +10,10 @@ public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper co
     {
         var threads = await client.GetActiveGuildThreadsAsync(config.GuildId);
         
-        var forumThread = threads.First(i => i.Id == args.ChannelId);
+        var forumThread = threads.FirstOrDefault(i => i.Id == args.ChannelId);
+
+        if (forumThread == null)
+            return;
 
         var owner = await mapVoteHelper.GetOwnerFromThread(forumThread);
 
