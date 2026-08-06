@@ -5,7 +5,7 @@ namespace CompCube_Server.Discord.MapPooling.Voting;
 
 public class MapVoteHelper(RestClient restClient, DiscordConfigHelper config)
 {
-    public async Task<MapThreadUpvotes> GetUpvotesFromThread(ulong threadId)
+    public async Task<MapThreadUpvotes> GetVotesFromThread(ulong threadId)
     {
         var threads = await restClient.GetActiveGuildThreadsAsync(config.GuildId);
         
@@ -13,11 +13,16 @@ public class MapVoteHelper(RestClient restClient, DiscordConfigHelper config)
 
         var downvoteReactions = await forumThread.GetMessageReactionsAsync(threadId, new ReactionEmojiProperties("👎")).ToArrayAsync();
         var upvoteReactions = await forumThread.GetMessageReactionsAsync(threadId, new ReactionEmojiProperties("👍")).ToArrayAsync();
+        
+        var reactionDictionary = new Dictionary<User, string>()
+            .Concat(upvoteReactions.Select(i => new KeyValuePair<User, string>(i, "👍")))
+            .Concat(downvoteReactions.Select(i => new KeyValuePair<User, string>(i, "👎")))
+            .DistinctBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         var submissionOwner = await GetOwnerFromThread(forumThread);
         
-        downvoteReactions = downvoteReactions.Where(i => i.Id != submissionOwner.Id).ToArray();
-        upvoteReactions = upvoteReactions.Where(i => i.Id != submissionOwner.Id).ToArray();
+        downvoteReactions = reactionDictionary.Where(i => i.Value == "👎").Select(i => i.Key).ToArray();
+        upvoteReactions = reactionDictionary.Where(i => i.Value == "👍").Select(i => i.Key).ToArray();
 
         return new MapThreadUpvotes(upvoteReactions, downvoteReactions, submissionOwner);
     }

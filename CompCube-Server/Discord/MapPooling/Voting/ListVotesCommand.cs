@@ -9,7 +9,7 @@ public class ListVotesCommand(MapVoteHelper mapVoteHelper) : ApplicationCommandM
     [SlashCommand("votes", "List the votes on a map thread")]
     public async Task<InteractionMessageProperties> ListVotes()
     {
-        var votes = await mapVoteHelper.GetUpvotesFromThread(Context.Channel.Id);
+        var votes = await mapVoteHelper.GetVotesFromThread(Context.Channel.Id);
         
         return new InteractionMessageProperties()
         {

@@ -80,6 +80,7 @@ public class Program
         }
         
         var connectionManager = host.Services.GetRequiredService<ConnectionManager>();
+        host.Services.GetRequiredService<ForumChecker>();
 
         host.UseWebSockets(new WebSocketOptions
         {

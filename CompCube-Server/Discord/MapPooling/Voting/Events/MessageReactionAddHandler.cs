@@ -21,5 +21,7 @@ public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper co
             return;
 
         await client.DeleteUserMessageReactionAsync(args.ChannelId, args.ChannelId, new ReactionEmojiProperties("👍"), args.UserId);
+        await Task.Delay(100);
+        await client.DeleteUserMessageReactionAsync(args.ChannelId, args.ChannelId, new ReactionEmojiProperties("👎"), args.UserId);
     }
 }
