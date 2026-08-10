@@ -18,7 +18,7 @@ public class ForumChecker
         _mapVoteHelper = mapVoteHelper;
         _logger = logger;
         
-        Console.WriteLine("started");
+        // Console.WriteLine("started");
         
         Task.Factory.StartNew(CheckMaps, TaskCreationOptions.LongRunning);
     }
@@ -29,7 +29,7 @@ public class ForumChecker
         {
             try
             {
-                Console.WriteLine("checking maps");
+                // Console.WriteLine("checking maps");
 
                 var activeThreads = await _restClient.GetActiveGuildThreadsAsync(_configHelper.GuildId);
 
@@ -55,12 +55,12 @@ public class ForumChecker
 
     private async Task CheckForum(GuildThread thread)
     {
-        Console.WriteLine($"checking for {thread.Id}");
+        // Console.WriteLine($"checking for {thread.Id}");
         
-        if (thread.CreatedAt.AddMinutes(7) > DateTimeOffset.Now)
+        if (thread.CreatedAt.AddDays(7) > DateTimeOffset.Now)
             return;
 
-        if (thread.CreatedAt.AddMinutes(14) <= DateTimeOffset.Now)
+        if (thread.CreatedAt.AddDays(14) <= DateTimeOffset.Now)
         {
             Console.WriteLine("rejected for inactivity");
             
@@ -80,19 +80,19 @@ public class ForumChecker
         
         var voteState = await _mapVoteHelper.GetVotesFromThread(thread.Id);
 
-        if (voteState.Downvotes.Count >= 1)
+        if (voteState.Downvotes.Count >= 3)
         {
             await DenyMap(thread, voteState);
             return;
         }
 
-        if (voteState.Upvotes.Count >= 1)
+        if (voteState.Upvotes.Count >= 3)
             await AcceptMap(thread, voteState);
     }
 
     private async Task AcceptMap(GuildThread forumThread, MapThreadUpvotes voteState)
     {
-        Console.WriteLine("accepted");
+        // Console.WriteLine("accepted");
         
         await forumThread.SendMessageAsync(new MessageProperties()
         {
@@ -110,7 +110,7 @@ public class ForumChecker
 
     private async Task DenyMap(GuildThread forumThread, MapThreadUpvotes voteState)
     {
-        Console.WriteLine("denied");
+        // Console.WriteLine("denied");
 
         await forumThread.SendMessageAsync(new MessageProperties()
         {
