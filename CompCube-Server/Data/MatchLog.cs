@@ -2,7 +2,7 @@
 using CompCube_Models.Models.Match;
 using Newtonsoft.Json;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public class MatchLog(UserData userData, IConfiguration configuration) : TableManager(configuration)
 {

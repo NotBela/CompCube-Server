@@ -1,5 +1,6 @@
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
+using CompCube_Server.Data;
 using CompCube_Server.Discord;
 using CompCube_Server.Discord.MapPooling;
 using CompCube_Server.Discord.MapPooling.Voting;
@@ -8,7 +9,6 @@ using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
-using CompCube_Server.SQL;
 using NetCord;
 using NetCord.Gateway;
 using NetCord.Hosting.Gateway;

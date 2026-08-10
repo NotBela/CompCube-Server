@@ -2,7 +2,7 @@
 using CompCube_Models.Models.Match;
 using CompCube_Server.Logging;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public class RankingData(IConfiguration config, Logger logger, RankFetcher rankFetcher) : TableManager(config)
 {

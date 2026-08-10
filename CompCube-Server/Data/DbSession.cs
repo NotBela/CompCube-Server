@@ -1,6 +1,6 @@
 ﻿using MySqlConnector;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public class DbSession
 {

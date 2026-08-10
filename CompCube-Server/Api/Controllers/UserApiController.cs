@@ -1,6 +1,6 @@
 ﻿using CompCube_Models.Models.ClientData;
+using CompCube_Server.Data;
 using CompCube_Server.Logging;
-using CompCube_Server.SQL;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Api.Controllers;

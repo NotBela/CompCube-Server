@@ -1,6 +1,6 @@
 ﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
-using CompCube_Server.SQL;
 
 namespace CompCube_Server.Gameplay.Match.Dealer;
 

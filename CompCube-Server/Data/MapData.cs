@@ -1,7 +1,7 @@
 ﻿using CompCube_Models.Models.Map;
 using CompCube_Server.Logging;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public class MapData(Logger logger, IConfiguration configuration) : TableManager(configuration)
 {

@@ -7,7 +7,7 @@ using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
-using CompCube_Server.SQL;
+using CompCube_Server.Data;
 
 namespace CompCube_Server.Gameplay.Match;
 

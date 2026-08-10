@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using MySqlConnector;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public abstract class TableManager : IDisposable
 {

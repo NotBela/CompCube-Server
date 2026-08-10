@@ -1,5 +1,5 @@
 ﻿using CompCube_Models.Models.ClientData;
-using CompCube_Server.SQL;
+using CompCube_Server.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Api.Controllers;

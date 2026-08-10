@@ -3,7 +3,6 @@ using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Models.Client;
-using CompCube_Server.SQL;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 

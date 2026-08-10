@@ -1,7 +1,7 @@
 ﻿using CompCube_Models.Models.ClientData;
 using MySqlConnector;
 
-namespace CompCube_Server.SQL;
+namespace CompCube_Server.Data;
 
 public class UserData(RankingData rankingData, IConfiguration configuration) : TableManager(configuration)
 {

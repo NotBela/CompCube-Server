@@ -1,5 +1,5 @@
 ﻿using CompCube_Models.Models.Map;
-using CompCube_Server.SQL;
+using CompCube_Server.Data;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
