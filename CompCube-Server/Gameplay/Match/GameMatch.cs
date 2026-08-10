@@ -4,7 +4,6 @@ using CompCube_Models.Models.Match;
 using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
-using CompCube_Server.Discord.Events;
 using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;

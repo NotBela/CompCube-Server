@@ -1,20 +1,22 @@
-using System.Net.Mime;
-using System.Net.WebSockets;
-using System.Reflection;
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
 using CompCube_Server.Discord;
-using CompCube_Server.Discord.Commands;
-using CompCube_Server.Discord.Events;
+using CompCube_Server.Discord.MapPooling;
+using CompCube_Server.Discord.MapPooling.Voting;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
 using CompCube_Server.SQL;
+using NetCord;
+using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
+using NetCord.Hosting.Services.Commands;
+using NetCord.Hosting.Services.ComponentInteractions;
+using NetCord.Services.ComponentInteractions;
 
 namespace CompCube_Server;
 
@@ -26,7 +28,7 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
         {
-            ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
+            // ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
         });
 
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
@@ -34,7 +36,7 @@ public class Program
         InstallBindings(builder.Services);
         
         if (_useDiscordIntegration)
-            builder.Services.AddDiscordGateway().AddApplicationCommands();
+            builder.Services.AddDiscordGateway(options => options.Intents = GatewayIntents.All).AddApplicationCommands().AddComponentInteractions<ButtonInteraction, ButtonInteractionContext>().AddComponentInteractions<ModalInteraction, ModalInteractionContext>().AddGatewayHandlers(typeof(Program).Assembly);
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
@@ -75,10 +77,10 @@ public class Program
         if (_useDiscordIntegration)
         {
             host.AddModules(typeof(Program).Assembly);
-            host.UseGatewayHandlers();
         }
         
         var connectionManager = host.Services.GetRequiredService<ConnectionManager>();
+        host.Services.GetRequiredService<ForumChecker>();
 
         host.UseWebSockets(new WebSocketOptions
         {
@@ -135,8 +137,12 @@ public class Program
         services.AddSingleton<MapApiController>();
         services.AddSingleton<ServerStatusApiController>();
         services.AddSingleton<UserApiController>();
+
+        if (!_useDiscordIntegration) 
+            return;
         
-        services.AddSingleton<UserCommands>();
-        services.AddSingleton<ServerCommands>();
+        services.AddSingleton<DiscordConfigHelper>();
+        services.AddSingleton<MapVoteHelper>();
+        services.AddSingleton<ForumChecker>();
     }
 }

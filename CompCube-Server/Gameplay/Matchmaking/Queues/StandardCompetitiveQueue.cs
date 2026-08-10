@@ -1,5 +1,4 @@
-﻿using CompCube_Server.Discord.Events;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;

@@ -1,0 +1,27 @@
+﻿using NetCord.Gateway;
+using NetCord.Hosting.Gateway;
+using NetCord.Rest;
+
+namespace CompCube_Server.Discord.MapPooling.Voting.Events;
+
+public class MessageReactionAddHandler(RestClient client, DiscordConfigHelper config, MapVoteHelper mapVoteHelper) : IMessageReactionAddGatewayHandler
+{
+    public async ValueTask HandleAsync(MessageReactionAddEventArgs args)
+    {
+        var threads = await client.GetActiveGuildThreadsAsync(config.GuildId);
+        
+        var forumThread = threads.FirstOrDefault(i => i.Id == args.ChannelId);
+
+        if (forumThread == null)
+            return;
+
+        var owner = await mapVoteHelper.GetOwnerFromThread(forumThread);
+
+        if (owner.Id != args.UserId)
+            return;
+
+        await client.DeleteUserMessageReactionAsync(args.ChannelId, args.ChannelId, new ReactionEmojiProperties("👍"), args.UserId);
+        await Task.Delay(100);
+        await client.DeleteUserMessageReactionAsync(args.ChannelId, args.ChannelId, new ReactionEmojiProperties("👎"), args.UserId);
+    }
+}
