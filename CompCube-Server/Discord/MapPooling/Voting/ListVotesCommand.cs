@@ -1,4 +1,5 @@
 ﻿using CompCube_Server.Extensions;
+using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ApplicationCommands;
 
@@ -6,7 +7,7 @@ namespace CompCube_Server.Discord.MapPooling.Voting;
 
 public class ListVotesCommand(MapVoteHelper mapVoteHelper) : ApplicationCommandModule<ApplicationCommandContext>
 {
-    [SlashCommand("votes", "List the votes on a map thread")]
+    [SlashCommand("votes", "List the votes on a map thread", Contexts = [InteractionContextType.Guild])]
     public async Task<InteractionMessageProperties> ListVotes()
     {
         var votes = await mapVoteHelper.GetVotesFromThread(Context.Channel.Id);
