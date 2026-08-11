@@ -117,6 +117,7 @@ public class Program
         services.AddTransient<UserData>();
         services.AddTransient<RankingData>();
         services.AddTransient<RankFetcher>();
+        services.AddTransient<MapQueue>();
 
         services.AddTransient<DbSession>();
 
