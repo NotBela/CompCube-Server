@@ -1,4 +1,5 @@
 ﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Data;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -9,12 +10,14 @@ namespace CompCube_Server.Api.Controllers;
 public class MapApiController : ControllerBase
 {
     private readonly MapData _mapData;
+    private readonly BeatSaverApiWrapper _beatSaver;
     
     public static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
 
-    public MapApiController(MapData mapData)
+    public MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver)
     {
         _mapData = mapData;
+        _beatSaver = beatSaver;
 
         Directory.CreateDirectory(BeatmapsPath);
     }

@@ -41,6 +41,8 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
                 break;
             case ServerPacket.ServerPacketTypes.PlayerSelectedMap:
                 OnScoreSubmission?.Invoke(new ScoreSubmissionPacket(200000, 1000000, true, 0, false), this);
+                await Task.Delay(3500);
+                Disconnect();
                 break;
             case ServerPacket.ServerPacketTypes.StartPickPhase:
                 var pickPhasePacket = packet as StartPickPhasePacket;

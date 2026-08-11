@@ -1,4 +1,5 @@
 ﻿using CompCube_Models.Models.Map;
+using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Data;
 using NetCord;
 using NetCord.Rest;
@@ -6,10 +7,10 @@ using NetCord.Services.ApplicationCommands;
 
 namespace CompCube_Server.Discord.MapPooling.Commands;
 
-public class ForcedMapPoolControls(MapData mapData, MapQueue queue) : ApplicationCommandModule<ApplicationCommandContext>
+public class ForcedMapPoolControls(MapData mapData, MapQueue queue, BeatSaverApiWrapper beatSaver) : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("forceadd", "Force adds a map to the pool", Contexts = [InteractionContextType.Guild], DefaultGuildPermissions = Permissions.Administrator)]
-    public InteractionMessageProperties Add(string hash, string difficulty, string category)
+    public async Task<InteractionMessageProperties> Add(string hash, string difficulty, string category)
     {
         if (!Enum.TryParse<VotingMap.Category>(category, out var categoryResult))
             return "Failed to parse category!";
@@ -18,6 +19,8 @@ public class ForcedMapPoolControls(MapData mapData, MapQueue queue) : Applicatio
             return "Failed to parse difficulty!";
         
         mapData.AddMap(new VotingMap(hash, difficultyResult, categoryResult));
+
+        await beatSaver.DownloadAllMissingBeatmaps();
 
         return $"Forcefully added {hash} to the map pool.";
     }
@@ -36,6 +39,12 @@ public class ForcedMapPoolControls(MapData mapData, MapQueue queue) : Applicatio
         
         return "Forcefully added " + hash + " to the queue.";
     }
-    
-    
+
+    [SlashCommand("downloadmissingmaps", "download all missing maps", Contexts = [InteractionContextType.Guild],
+        DefaultGuildPermissions = Permissions.Administrator)]
+    public async Task<InteractionMessageProperties> DownloadMissingMaps()
+    {
+        await beatSaver.DownloadAllMissingBeatmaps();
+        return "done 💯";
+    }
 }

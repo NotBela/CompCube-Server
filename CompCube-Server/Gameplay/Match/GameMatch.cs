@@ -1,4 +1,5 @@
-﻿using CompCube_Models.Models.ClientData;
+﻿using System.Reflection.Metadata;
+using CompCube_Models.Models.ClientData;
 using CompCube_Models.Models.Map;
 using CompCube_Models.Models.Match;
 using CompCube_Models.Models.Packets;
@@ -32,9 +33,22 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         
         _red = new ClientManager(red, new DealerV0(mapData), true, logger);
         _blue = new ClientManager(blue, new DealerV0(mapData), false, logger);
+        
+        _red.ClientDidDisconnect += HandleClientDisconnected;
+        _blue.ClientDidDisconnect += HandleClientDisconnected;
     }
 
-    public void StartMatch() => StartMatchAsync();
+    public void StartMatch()
+    {
+        try
+        {
+            StartMatchAsync();
+        }
+        catch (Exception e)
+        {
+            logger.Error(e);
+        }
+    }
 
     public async Task StartMatchAsync()
     {
@@ -51,6 +65,9 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
     {
         try
         {
+            _red.ClientDidDisconnect -= HandleClientDisconnected;
+            _blue.ClientDidDisconnect -= HandleClientDisconnected;
+            
             await EndMatchAbruptly("Player Forfeit");
         }
         catch (Exception e)
@@ -138,6 +155,12 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
         
             loser.Damage(difference, GetMultiplierFromRound(_currentRound));
 
+            if (loser.Health == 0)
+            {
+                _red.ClientDidDisconnect -= HandleClientDisconnected;
+                _blue.ClientDidDisconnect -= HandleClientDisconnected;
+            }
+
             await _red.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
             await _blue.SendRoundResults(redScore, blueScore, _red.Health, _blue.Health);
 
@@ -164,8 +187,17 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchL
 
     private async Task EndMatchAbruptly(string reason)
     {
-        await _red.DisconnectClientAbruptly(reason);
-        await _blue.DisconnectClientAbruptly(reason);
+        try
+        {
+            await _red.DisconnectClientAbruptly(reason);
+        }
+        catch{}
+
+        try
+        {
+            await _blue.DisconnectClientAbruptly(reason);
+        }
+        catch{}
     }
 
     private float GetMultiplierFromRound(int round)
