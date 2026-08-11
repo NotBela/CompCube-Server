@@ -10,13 +10,15 @@ public class ForumChecker
     private readonly DiscordConfigHelper _configHelper;
     private readonly MapVoteHelper _mapVoteHelper;
     private readonly Logger _logger;
+    private readonly MapLog _mapLog;
     
-    public ForumChecker(RestClient restClient, DiscordConfigHelper configHelper, MapVoteHelper mapVoteHelper, Logger logger)
+    public ForumChecker(RestClient restClient, DiscordConfigHelper configHelper, MapVoteHelper mapVoteHelper, Logger logger, MapLog mapLog)
     {
         _restClient = restClient;
         _configHelper = configHelper;
         _mapVoteHelper = mapVoteHelper;
         _logger = logger;
+        _mapLog = mapLog;
         
         // Console.WriteLine("started");
         
@@ -62,7 +64,8 @@ public class ForumChecker
 
         if (thread.CreatedAt.AddDays(14) <= DateTimeOffset.Now)
         {
-            Console.WriteLine("rejected for inactivity");
+            // Console.WriteLine("rejected for inactivity");
+            await _mapLog.LogDeniedBeatmap(thread, true);
             
             await _restClient.SendMessageAsync(thread.Id, new MessageProperties()
             {
@@ -74,7 +77,7 @@ public class ForumChecker
                 ]
             });
 
-            await thread.ModifyAsync(options => options.WithArchived().WithLocked());
+            await thread.ModifyAsync(options => options.WithName("[❌💤]" + thread.Name).WithArchived().WithLocked());
             return;
         }
         
@@ -92,7 +95,7 @@ public class ForumChecker
 
     private async Task AcceptMap(GuildThread forumThread, MapThreadUpvotes voteState)
     {
-        // Console.WriteLine("accepted");
+        await _mapLog.LogQueuedBeatmap(forumThread);
         
         await forumThread.SendMessageAsync(new MessageProperties()
         {
@@ -110,7 +113,7 @@ public class ForumChecker
 
     private async Task DenyMap(GuildThread forumThread, MapThreadUpvotes voteState)
     {
-        // Console.WriteLine("denied");
+        await _mapLog.LogDeniedBeatmap(forumThread, false);
 
         await forumThread.SendMessageAsync(new MessageProperties()
         {

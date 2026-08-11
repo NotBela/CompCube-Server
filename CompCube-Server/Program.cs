@@ -146,5 +146,6 @@ public class Program
         services.AddSingleton<DiscordConfigHelper>();
         services.AddSingleton<MapVoteHelper>();
         services.AddSingleton<ForumChecker>();
+        services.AddSingleton<MapLog>();
     }
 }

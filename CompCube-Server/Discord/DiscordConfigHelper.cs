@@ -11,6 +11,8 @@ public class DiscordConfigHelper(IConfiguration config)
     
     public ulong PoolerRoleId => config.GetSection("Discord").GetSection("RoleIds").GetValue<ulong>("Pooler");
     
+    public ulong MapPoolLoggingChannel => config.GetSection("Discord").GetValue<ulong>("MapPoolLoggingChannel");
+    
     public ulong GuildId => config.GetSection("Discord").GetValue<ulong>("GuildId");
 
     public VotingMap.Category[] GetCategoriesFromRoles(ulong[]? roleIds)

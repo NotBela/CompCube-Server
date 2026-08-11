@@ -24,7 +24,7 @@ public class ListMapsCommand(MapData mapData, BeatSaverApiWrapper beatSaver, Map
         };
     }
 
-    [SlashCommand("getQueue", "Shows all maps currently in queue", Contexts = [InteractionContextType.Guild])]
+    [SlashCommand("getqueue", "Shows all maps currently in queue", Contexts = [InteractionContextType.Guild])]
     public async Task<InteractionMessageProperties> GetQueue()
     {
         var maps = queue.GetMaps().OrderBy(i => i.MapCategory);
