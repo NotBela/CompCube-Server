@@ -2,13 +2,11 @@
 
 namespace CompCube_Server.Data;
 
-public class DbSession(IConfiguration configuration)
+public class DbSession(IConfigurationRoot configuration)
 {
-    private string ConnectionString => configuration.GetConnectionString("DefaultConnection") ?? throw new Exception("No connection string in config!");
-
     public MySqlConnection CreateNewConnection()
     {
-        var connection = new MySqlConnection(ConnectionString);
+        var connection = new MySqlConnection(configuration.GetConnectionString("DefaultConnection"));
         connection.Open();
         return connection;
     }
