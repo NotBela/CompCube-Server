@@ -62,4 +62,10 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
         OnDisconnected?.Invoke(this);
         return Task.CompletedTask;
     }
+
+    public Task DisconnectAbruptlyAsync(string reason)
+    {
+        Disconnect();
+        return Task.CompletedTask;
+    }
 }

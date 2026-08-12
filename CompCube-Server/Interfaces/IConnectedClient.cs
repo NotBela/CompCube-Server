@@ -20,4 +20,6 @@ public interface IConnectedClient
     public Task SendPacket(ServerPacket packet);
 
     public Task Disconnect();
+
+    public Task DisconnectAbruptlyAsync(string reason);
 }

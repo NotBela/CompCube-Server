@@ -342,9 +342,6 @@ public class ClientManager
         await ConnectedClient.Disconnect();
     }
 
-    public async Task DisconnectClientAbruptly(string reason)
-    { 
-        await ConnectedClient.SendPacket(new AbruptDisconnectionPacket(reason));
-        await ConnectedClient.Disconnect();
-    }
+    public async Task DisconnectClientAbruptly(string reason) => await ConnectedClient.DisconnectAbruptlyAsync(reason);
+    
 }
