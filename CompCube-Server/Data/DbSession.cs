@@ -2,7 +2,7 @@
 
 namespace CompCube_Server.Data;
 
-public class DbSession(IConfigurationRoot configuration)
+public class DbSession(IConfiguration configuration)
 {
     public MySqlConnection CreateNewConnection()
     {
