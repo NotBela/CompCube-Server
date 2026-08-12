@@ -3,14 +3,26 @@ using MySqlConnector;
 
 namespace CompCube_Server.Data;
 
-public class UserData(RankingData rankingData, IConfiguration configuration) : TableManager(configuration)
+public class UserData
 {
+    private readonly RankingData _rankingData;
+    private readonly DbSession _dbSession;
+
+    public UserData(RankingData rankingData, DbSession dbSession)
+    {
+        _rankingData = rankingData;
+        _dbSession = dbSession;
+        
+        CreateInitialTables();
+    }
+
     public UserInfo? GetUserByDiscordId(string discordId)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE discordId = @discordId AND season = @season LIMIT 1";
         command.Parameters.AddWithValue("discordId", discordId);
-        command.Parameters.AddWithValue("season", rankingData.CurrentSeason);
+        command.Parameters.AddWithValue("season", _rankingData.CurrentSeason);
         
         using var reader = command.ExecuteReader();
 
@@ -22,7 +34,8 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
 
     public void LinkDiscordToUser(string userId, string discordId)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "UPDATE userData SET discordId = @discordId WHERE id = @userId";
         command.Parameters.AddWithValue("userId", ulong.Parse(userId));
         command.Parameters.AddWithValue("discordId", discordId);
@@ -33,9 +46,10 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     public UserInfo? GetUserById(string userId, int season = -1)
     {
         if (season == -1)
-            season = rankingData.CurrentSeason;
-        
-        var command = Connection.CreateCommand();
+            season = _rankingData.CurrentSeason;
+
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE userData.id = @id AND rankingData.season = @season LIMIT 1";
         command.Parameters.AddWithValue("id", ulong.Parse(userId));
         command.Parameters.AddWithValue("season", season);
@@ -49,9 +63,10 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
 
     public List<UserInfo> GetAllUsers()
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE season = @season ORDER BY mmr DESC";
-        command.Parameters.AddWithValue("season", rankingData.CurrentSeason);
+        command.Parameters.AddWithValue("season", _rankingData.CurrentSeason);
         
         var userList = new List<UserInfo>();
         
@@ -83,7 +98,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
             discordId = reader.GetString(3);
         var banned = reader.GetBoolean(4);
 
-        var rankData = rankingData.GetRankingData(id.ToString());
+        var rankData = _rankingData.GetRankingData(id.ToString());
         
 
         return new UserInfo(userName, id.ToString(), rankData.Elo, badge, rankData.Rank, discordId, banned, rankData.Wins, rankData.TotalGames, rankData.Winstreak, rankData.BestWinstreak);
@@ -93,7 +108,8 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     {
         if (badgeName == null) return null;
         
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM badges WHERE badgeName = @badgeName LIMIT 1";
         command.Parameters.AddWithValue("@badgeName", badgeName);
         using var reader = command.ExecuteReader();
@@ -142,9 +158,10 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
     
     public UserInfo UpdateUserDataOnLogin(string userId, string userName)
     {
-        rankingData.CreateRankingDataForUserIfNotExists(userId);
+        _rankingData.CreateRankingDataForUserIfNotExists(userId);
         
-        using var addToUserDataCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var addToUserDataCommand = connection.CreateCommand();
         addToUserDataCommand.CommandText = "INSERT IGNORE INTO userData VALUES (@userId, @userName, null, null, false)";
         addToUserDataCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         addToUserDataCommand.Parameters.AddWithValue("@userName", userName);
@@ -153,7 +170,7 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
         return GetUserById(userId) ?? throw new Exception("Could not find updated user!");
     }
     
-    protected override void CreateInitialTables()
+    private void CreateInitialTables()
     {
         CreateUserDataTable();
         CreateBadgeTable();
@@ -161,14 +178,16 @@ public class UserData(RankingData rankingData, IConfiguration configuration) : T
 
     private void CreateBadgeTable()
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "CREATE TABLE IF NOT EXISTS badges (badgeName TEXT NOT NULL, badgeColor TEXT NOT NULL, bold BOOLEAN NOT NULL)";
         command.ExecuteNonQuery();
     }
     
     private void CreateUserDataTable()
     {
-        var dbCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var dbCommand = connection.CreateCommand();
         dbCommand.CommandText = "CREATE TABLE IF NOT EXISTS userData (" +
                                 "id SERIAL NOT NULL PRIMARY KEY, " +
                                 "username TEXT NOT NULL, " +

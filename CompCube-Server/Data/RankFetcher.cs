@@ -8,7 +8,8 @@ public class RankFetcher(DbSession db, IConfiguration configuration)
     
     public long GetRankFromElo(int elo)
     {
-        using var command = db.Connection.CreateCommand();
+        using var connection = db.CreateNewConnection();
+        var command = connection.CreateCommand();
         
         command.CommandText = "SELECT COUNT(*) FROM userData JOIN rankingData USING (id) WHERE mmr > @mmrThreshold AND banned = false AND season = @season ORDER BY mmr";
         command.Parameters.AddWithValue("@season", CurrentSeason);

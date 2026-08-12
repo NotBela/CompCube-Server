@@ -3,30 +3,46 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.Data;
 
-public class MapQueue(IConfiguration config, Logger logger, MapData mapData) : TableManager(config)
+public class MapQueue
 {
-    protected override void CreateInitialTables()
+    private readonly DbSession _session;
+    private readonly Logger _logger;
+    private readonly MapData _mapData;
+
+    public MapQueue(DbSession session, Logger logger, MapData mapData)
     {
-        var command = Connection.CreateCommand();
+        _session = session;
+        _logger = logger;
+        _mapData = mapData;
+        
+        CreateInitialTables();
+    }
+
+    private void CreateInitialTables()
+    {
+        using var connection = _session.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "CREATE TABLE IF NOT EXISTS queue ( hash TEXT NOT NULL, difficulty TEXT NOT NULL, category TEXT NOT NULL);";
         command.ExecuteNonQuery();
     }
 
     public void RemoveFromQueueAndAdd(VotingMap votingMap)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _session.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM queue WHERE hash = @hash AND difficulty = @difficulty;";
         command.Parameters.AddWithValue("difficulty", votingMap.Difficulty.ToString());
         command.Parameters.AddWithValue("hash", votingMap.Hash);
         
         command.ExecuteNonQuery();
         
-        mapData.AddMap(votingMap);
+        _mapData.AddMap(votingMap);
     }
 
     public void AddToQueue(VotingMap votingMap)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _session.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO queue VALUES (@hash, @difficulty, @category);";
         
         command.Parameters.AddWithValue("hash", votingMap.Hash);
@@ -40,7 +56,8 @@ public class MapQueue(IConfiguration config, Logger logger, MapData mapData) : T
     {
         var maps = new List<VotingMap>();
 
-        var command = Connection.CreateCommand();
+        using var connection = _session.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM queue;";
         using var reader = command.ExecuteReader();
 
@@ -54,13 +71,13 @@ public class MapQueue(IConfiguration config, Logger logger, MapData mapData) : T
 
             if (!Enum.TryParse<VotingMap.DifficultyType>(diffString, out var difficulty))
             {
-                logger.Info($"Failed to parse difficulty from hash {hash}: {difficulty}");
+                _logger.Info($"Failed to parse difficulty from hash {hash}: {difficulty}");
                 continue;
             }
 
             if (!Enum.TryParse<VotingMap.Category>(categoryString, out var category))
             {
-                logger.Info($"Failed to parse category from hash {hash}: {category}");
+                _logger.Info($"Failed to parse category from hash {hash}: {category}");
                 continue;
             }
             

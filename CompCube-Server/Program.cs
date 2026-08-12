@@ -112,7 +112,6 @@ public class Program
     {
         services.AddSingleton<Logger>();
         
-        services.AddTransient<MatchLog>();
         services.AddTransient<MapData>();
         services.AddTransient<UserData>();
         services.AddTransient<RankingData>();

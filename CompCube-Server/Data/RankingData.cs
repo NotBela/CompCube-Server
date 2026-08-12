@@ -4,14 +4,27 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.Data;
 
-public class RankingData(IConfiguration config, Logger logger, RankFetcher rankFetcher) : TableManager(config)
+public class RankingData
 {
-    private readonly IConfiguration _config = config;
-    public int CurrentSeason => _config.GetSection("Server").GetValue("Season", 0);
-    
-    protected override void CreateInitialTables()
+    private readonly IConfiguration _config;
+    private readonly DbSession _dbSession;
+    private readonly RankFetcher _rankFetcher;
+
+    public RankingData(IConfiguration config, DbSession dbSession, RankFetcher rankFetcher)
     {
-        var command = Connection.CreateCommand();
+        _config = config;
+        _dbSession = dbSession;
+        _rankFetcher = rankFetcher;
+        
+        CreateInitialTables();
+    }
+
+    public int CurrentSeason => _config.GetSection("Server").GetValue("Season", 0);
+
+    private void CreateInitialTables()
+    {
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
 
         command.CommandText = "CREATE TABLE IF NOT EXISTS rankingData (season INT NOT NULL, id SERIAL NOT NULL, mmr INT NOT NULL, wins INT NOT NULL DEFAULT 0, totalGames INT NOT NULL DEFAULT 0, winstreak INT NOT NULL DEFAULT 0, bestWinstreak INT NOT NULL DEFAULT 0)";
         command.ExecuteNonQuery();
@@ -24,13 +37,14 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
 
     private void IncrementWins(UserInfo user)
     {
-        using var incrementWinsCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        using var incrementWinsCommand = connection.CreateCommand();
         incrementWinsCommand.CommandText = "UPDATE rankingData SET wins = wins + 1 WHERE id = @id AND season = @season LIMIT 1";
         incrementWinsCommand.Parameters.AddWithValue("@id", ulong.Parse(user.UserId));
         incrementWinsCommand.Parameters.AddWithValue("@season", CurrentSeason);
         incrementWinsCommand.ExecuteNonQuery();
 
-        using var incrementWinstreakCommand = Connection.CreateCommand();
+        using var incrementWinstreakCommand = connection.CreateCommand();
         incrementWinstreakCommand.CommandText = "UPDATE rankingData SET winstreak = winstreak + 1 WHERE id = @id AND season = @season LIMIT 1";
         incrementWinstreakCommand.Parameters.AddWithValue("@id", ulong.Parse(user.UserId));
         incrementWinstreakCommand.Parameters.AddWithValue("@season", CurrentSeason);
@@ -39,7 +53,7 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
         if (user.Winstreak + 1 < user.HighestWinstreak)
             return;
 
-        using var incrementBestWinstreakCommand = Connection.CreateCommand();
+        using var incrementBestWinstreakCommand = connection.CreateCommand();
         incrementBestWinstreakCommand.CommandText = "UPDATE rankingData SET bestWinstreak = winstreak WHERE id = @id AND season = @season LIMIT 1";
         incrementBestWinstreakCommand.Parameters.AddWithValue("@id", ulong.Parse(user.UserId));
         incrementBestWinstreakCommand.Parameters.AddWithValue("@season", CurrentSeason);
@@ -48,7 +62,8 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
 
     private void ResetWinstreak(UserInfo user)
     {
-        using var resetWinstreakCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        using var resetWinstreakCommand = connection.CreateCommand();
         resetWinstreakCommand.CommandText = "UPDATE rankingData SET winstreak = 0 WHERE id = @id AND season = @season LIMIT 1";
         resetWinstreakCommand.Parameters.AddWithValue("@id", ulong.Parse(user.UserId));
         resetWinstreakCommand.Parameters.AddWithValue("@season", CurrentSeason);
@@ -57,7 +72,8 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
 
     private void IncrementTotalGames(UserInfo user)
     {
-        using var incrementTotalGamesCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        using var incrementTotalGamesCommand = connection.CreateCommand();
         incrementTotalGamesCommand.CommandText = "UPDATE rankingData SET totalGames = totalGames + 1 WHERE id = @id AND season = @season LIMIT 1";
         incrementTotalGamesCommand.Parameters.AddWithValue("@id", ulong.Parse(user.UserId));
         incrementTotalGamesCommand.Parameters.AddWithValue("@season", CurrentSeason);
@@ -66,7 +82,8 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
     
     private void AdjustMmr(string userId, int newMmr)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "UPDATE rankingData SET mmr = @newMmr WHERE rankingData.id = @id AND season = @season LIMIT 1";
         command.Parameters.AddWithValue("season", CurrentSeason);
         command.Parameters.AddWithValue("newMmr", Math.Max(0, newMmr));
@@ -76,17 +93,18 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
     
     public void CreateRankingDataForUserIfNotExists(string userId)
     {
-        using var indexCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        using var indexCommand = connection.CreateCommand();
         
         indexCommand.CommandText = "SELECT COUNT(*) FROM rankingData WHERE id = @userId AND season = @season";
         indexCommand.Parameters.AddWithValue("@userId", ulong.Parse(userId));
         indexCommand.Parameters.AddWithValue("@season", CurrentSeason);
-        var result = (long) indexCommand.ExecuteScalar();
+        var result = (long) indexCommand.ExecuteScalar()!;
 
         if (result >= 1)
             return;
 
-        using var command = Connection.CreateCommand();
+        using var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO rankingData VALUES (@season, @id, 1000, 0, 0, 0, 0)";
         command.Parameters.AddWithValue("@id", ulong.Parse(userId));
         command.Parameters.AddWithValue("@season", CurrentSeason);
@@ -95,7 +113,8 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
 
     public RankData GetRankingData(string userId)
     {
-        using var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         
         command.CommandText = "SELECT * FROM rankingData WHERE id = @id AND season = @season";
         command.Parameters.AddWithValue("@id", ulong.Parse(userId));
@@ -118,7 +137,7 @@ public class RankingData(IConfiguration config, Logger logger, RankFetcher rankF
             bestWinstreak = reader.GetInt32(6);
         }
         
-        var rank = rankFetcher.GetRankFromElo(elo);
+        var rank = _rankFetcher.GetRankFromElo(elo);
 
         return new((int) rank, elo, wins, totalGames, winstreak, bestWinstreak);
     }

@@ -3,18 +3,31 @@ using CompCube_Server.Logging;
 
 namespace CompCube_Server.Data;
 
-public class MapData(Logger logger, IConfiguration configuration) : TableManager(configuration)
+public class MapData
 {
-    protected override void CreateInitialTables()
+    private readonly Logger _logger;
+    private readonly DbSession _dbSession;
+
+    public MapData(Logger logger, DbSession dbSession)
     {
-        var createDbCommand = Connection.CreateCommand();
+        _logger = logger;
+        _dbSession = dbSession;
+        
+        CreateInitialTables();
+    }
+
+    private void CreateInitialTables()
+    {
+        using var connection = _dbSession.CreateNewConnection();
+        var createDbCommand = connection.CreateCommand();
         createDbCommand.CommandText = "CREATE TABLE IF NOT EXISTS mapData ( hash TEXT NOT NULL, difficulty TEXT NOT NULL, category TEXT NOT NULL, active BOOLEAN NOT NULL);";
         createDbCommand.ExecuteNonQuery();
     }
 
     public void AddMap(VotingMap votingMap)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO mapData VALUES (@hash, @difficulty, @category, true)";
         command.Parameters.AddWithValue("hash", votingMap.Hash);
         command.Parameters.AddWithValue("difficulty", votingMap.Difficulty.ToString());
@@ -25,7 +38,8 @@ public class MapData(Logger logger, IConfiguration configuration) : TableManager
 
     public void DisableMap(VotingMap votingMap)
     {
-        var command = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var command = connection.CreateCommand();
         
         command.CommandText = "UPDATE mapData SET active = false WHERE hash = @hash AND difficulty = @difficulty;";
         command.Parameters.AddWithValue("hash", votingMap.Hash);
@@ -38,7 +52,8 @@ public class MapData(Logger logger, IConfiguration configuration) : TableManager
     {
         var maps = new List<VotingMap>();
         
-        var dbCommand = Connection.CreateCommand();
+        using var connection = _dbSession.CreateNewConnection();
+        var dbCommand = connection.CreateCommand();
         dbCommand.CommandText = "SELECT * FROM mapData WHERE active = true;";
         using var reader = dbCommand.ExecuteReader();
 
@@ -50,7 +65,7 @@ public class MapData(Logger logger, IConfiguration configuration) : TableManager
 
             if (!Enum.TryParse<VotingMap.DifficultyType>(reader.GetString(1), out var difficulty))
             {
-                logger.Error($"Could not parse difficulty type for hash {hash}: {reader.GetString(1)}");
+                _logger.Error($"Could not parse difficulty type for hash {hash}: {reader.GetString(1)}");
                 continue;
             }
             
@@ -58,7 +73,7 @@ public class MapData(Logger logger, IConfiguration configuration) : TableManager
 
             if (!Enum.TryParse<VotingMap.Category>(categoryString, out var category))
             {
-                logger.Error($"Could not parse category for hash {hash}: {categoryString}");
+                _logger.Error($"Could not parse category for hash {hash}: {categoryString}");
                 continue;
             }
             
