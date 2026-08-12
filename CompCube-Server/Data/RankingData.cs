@@ -29,13 +29,8 @@ public class RankingData
         command.CommandText = "CREATE TABLE IF NOT EXISTS rankingData (season INT NOT NULL, id SERIAL NOT NULL, mmr INT NOT NULL, wins INT NOT NULL DEFAULT 0, totalGames INT NOT NULL DEFAULT 0, winstreak INT NOT NULL DEFAULT 0, bestWinstreak INT NOT NULL DEFAULT 0)";
         command.ExecuteNonQuery();
     }
-    
-    public void UpdateUserDataFromMatch(MatchResultsData results, int transfer, int penaltyForDisconnect)
-    {
-        
-    }
 
-    private void IncrementWins(UserInfo user)
+    public void IncrementWins(UserInfo user)
     {
         using var connection = _dbSession.CreateNewConnection();
         using var incrementWinsCommand = connection.CreateCommand();
@@ -60,7 +55,7 @@ public class RankingData
         incrementBestWinstreakCommand.ExecuteNonQuery();
     }
 
-    private void ResetWinstreak(UserInfo user)
+    public void ResetWinstreak(UserInfo user)
     {
         using var connection = _dbSession.CreateNewConnection();
         using var resetWinstreakCommand = connection.CreateCommand();
@@ -70,7 +65,7 @@ public class RankingData
         resetWinstreakCommand.ExecuteNonQuery();
     }
 
-    private void IncrementTotalGames(UserInfo user)
+    public void IncrementTotalGames(UserInfo user)
     {
         using var connection = _dbSession.CreateNewConnection();
         using var incrementTotalGamesCommand = connection.CreateCommand();
@@ -80,13 +75,13 @@ public class RankingData
         incrementTotalGamesCommand.ExecuteNonQuery();
     }
     
-    private void AdjustMmr(string userId, int newMmr)
+    public void AdjustMmr(string userId, int change)
     {
         using var connection = _dbSession.CreateNewConnection();
         var command = connection.CreateCommand();
-        command.CommandText = "UPDATE rankingData SET mmr = @newMmr WHERE rankingData.id = @id AND season = @season LIMIT 1";
+        command.CommandText = "UPDATE rankingData SET mmr = mmr + @change WHERE rankingData.id = @id AND season = @season LIMIT 1";
         command.Parameters.AddWithValue("season", CurrentSeason);
-        command.Parameters.AddWithValue("newMmr", Math.Max(0, newMmr));
+        command.Parameters.AddWithValue("change", change);
         command.Parameters.AddWithValue("id", ulong.Parse(userId));
         command.ExecuteNonQuery();
     }

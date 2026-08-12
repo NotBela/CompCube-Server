@@ -9,10 +9,11 @@ using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Logging;
 using CompCube_Server.Data;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, Logger logger, UserData userData, RankingData rankingData)
+public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
 {
     private MatchSettings _matchSettings;
 
@@ -67,6 +68,15 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, Rankin
         {
             _red.ClientDidDisconnect -= HandleClientDisconnected;
             _blue.ClientDidDisconnect -= HandleClientDisconnected;
+
+            var winner = GetOtherClient(client);
+            var loser = client;
+
+            var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+            
+            Console.WriteLine(eloChange);
+            
+            ApplyEloChanges(winner, loser, eloChange);
             
             await EndMatchAbruptly("Player Forfeit");
         }
@@ -171,6 +181,8 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, Rankin
                 var winner = loser.IsRed ? _blue : _red;
 
                 var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
+                
+                ApplyEloChanges(winner, loser, eloChange);
 
                 await winner.EndMatchForClient(eloChange, true);
                 await loser.EndMatchForClient(eloChange, false);
@@ -183,6 +195,26 @@ public class GameMatch(MapData mapData, Logger logger, UserData userData, Rankin
         {
             logger.Error(e);
         }
+    }
+
+    private void ApplyEloChanges(ClientManager winner, ClientManager loser, int eloChange)
+    {
+        rankingData.AdjustMmr(winner.ConnectedClient.UserInfo.UserId, eloChange);
+        rankingData.AdjustMmr(loser.ConnectedClient.UserInfo.UserId, -eloChange);
+        
+        rankingData.IncrementTotalGames(winner.ConnectedClient.UserInfo);
+        rankingData.IncrementTotalGames(loser.ConnectedClient.UserInfo);
+        
+        rankingData.IncrementWins(winner.ConnectedClient.UserInfo);
+        rankingData.ResetWinstreak(winner.ConnectedClient.UserInfo);
+    }
+
+    private ClientManager GetOtherClient(ClientManager client)
+    {
+        if (client.IsRed) 
+            return _blue;
+
+        return _red;
     }
 
     private async Task EndMatchAbruptly(string reason)
