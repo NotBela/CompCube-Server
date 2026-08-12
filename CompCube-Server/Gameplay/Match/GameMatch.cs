@@ -12,7 +12,7 @@ using CompCube_Server.Data;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, Logger logger, UserData userData, MatchLog matchLog, RankingData rankingData)
+public class GameMatch(MapData mapData, Logger logger, UserData userData, RankingData rankingData)
 {
     private MatchSettings _matchSettings;
 
