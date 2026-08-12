@@ -6,19 +6,6 @@ namespace CompCube_Server.Logging;
 
 public class Logger
 {
-    private string LogsPath => Path.Combine(Directory.GetCurrentDirectory(), "Logs");
-    
-    // bullshit happening in here
-    public Logger()
-    {
-        if (!Directory.Exists(LogsPath))
-            Directory.CreateDirectory(LogsPath);
-
-        if (File.Exists(Path.Combine(LogsPath, "latest.log")))
-        {
-            // var zipFile = new 
-        }
-    }
 
     public void Info(string text, [CallerFilePath] string callerPath = "") => Log(text, callerPath, ConsoleColor.White);
 
