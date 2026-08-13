@@ -26,7 +26,7 @@ public class MapQueue
         command.ExecuteNonQuery();
     }
 
-    public void RemoveFromQueueAndAdd(VotingMap votingMap)
+    public void RemoveFromQueueAndAdd(VotingMap votingMap, int batch)
     {
         using var connection = _session.CreateNewConnection();
         var command = connection.CreateCommand();
@@ -36,7 +36,7 @@ public class MapQueue
         
         command.ExecuteNonQuery();
         
-        _mapData.AddMap(votingMap);
+        _mapData.AddMap(votingMap, batch);
     }
 
     public void AddToQueue(VotingMap votingMap)
