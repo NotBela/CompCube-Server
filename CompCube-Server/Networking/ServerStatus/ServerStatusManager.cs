@@ -20,7 +20,7 @@ public class ServerStatusManager(IConfiguration config)
 
     public CompCube_Models.Models.Server.ServerStatus GetServerStatus()
     {
-        var serverSection = config.GetSection("Server");
+        var serverSection = config.GetSection("Gameplay");
 
         var allowedGameVersions = serverSection.GetSection("AllowedGameVersions").Get<string[]>();
 

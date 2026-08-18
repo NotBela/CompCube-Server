@@ -1,4 +1,5 @@
 ﻿using CompCube_Models.Models.ClientData;
+using CompCube_Server.Config;
 using MySqlConnector;
 
 namespace CompCube_Server.Data;
@@ -7,12 +8,14 @@ public class UserData
 {
     private readonly RankingData _rankingData;
     private readonly DbSession _dbSession;
+    private readonly ConfigHelper _configHelper;
 
-    public UserData(RankingData rankingData, DbSession dbSession)
+    public UserData(RankingData rankingData, DbSession dbSession, ConfigHelper configHelper)
     {
         _rankingData = rankingData;
         _dbSession = dbSession;
-        
+        _configHelper = configHelper;
+
         CreateInitialTables();
     }
 
@@ -22,7 +25,7 @@ public class UserData
         var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE discordId = @discordId AND season = @season LIMIT 1";
         command.Parameters.AddWithValue("discordId", discordId);
-        command.Parameters.AddWithValue("season", _rankingData.CurrentSeason);
+        command.Parameters.AddWithValue("season", _configHelper.Season);
         
         using var reader = command.ExecuteReader();
 
@@ -46,7 +49,7 @@ public class UserData
     public UserInfo? GetUserById(string userId, int season = -1)
     {
         if (season == -1)
-            season = _rankingData.CurrentSeason;
+            season = _configHelper.Season;
 
         using var connection = _dbSession.CreateNewConnection();
         var command = connection.CreateCommand();
@@ -66,7 +69,7 @@ public class UserData
         using var connection = _dbSession.CreateNewConnection();
         var command = connection.CreateCommand();
         command.CommandText = "SELECT * FROM userData JOIN rankingData USING (id) WHERE season = @season ORDER BY mmr DESC";
-        command.Parameters.AddWithValue("season", _rankingData.CurrentSeason);
+        command.Parameters.AddWithValue("season", _configHelper.Season);
         
         var userList = new List<UserInfo>();
         

@@ -35,18 +35,18 @@ public class ForumChecker
 
                 var activeThreads = await _restClient.GetActiveGuildThreadsAsync(_configHelper.GuildId);
 
-                Console.WriteLine(activeThreads.Count);
+                // Console.WriteLine(activeThreads.Count);
 
                 var self = await _restClient.GetCurrentApplicationAsync();
 
                 activeThreads = activeThreads.Where(i => i.OwnerId == self.Id).ToArray();
 
-                Console.WriteLine(activeThreads.Count);
+                // Console.WriteLine(activeThreads.Count);
 
                 foreach (var thread in activeThreads)
                     await CheckForum(thread);
 
-                await Task.Delay(new TimeSpan(0, 1, 0));
+                await Task.Delay(new TimeSpan(1, 0, 0));
             }
             catch (Exception e)
             {

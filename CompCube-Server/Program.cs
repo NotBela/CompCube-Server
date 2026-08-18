@@ -1,5 +1,6 @@
 using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Api.Controllers;
+using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Discord;
 using CompCube_Server.Discord.MapPooling;
@@ -44,7 +45,7 @@ public class Program
         
         Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps"));
 
-        var webSocketPort = builder.Configuration.GetSection("Server").GetValue("WebsocketListeningPort", -1);
+        var webSocketPort = builder.Configuration.GetSection("Gameplay").GetValue("WebsocketListeningPort", -1);
 
         if (webSocketPort == -1)
         {
@@ -52,7 +53,7 @@ public class Program
             webSocketPort = 8008;
         }
         
-        var apiPort = builder.Configuration.GetSection("Server").GetValue("ApiListeningPort", -1);
+        var apiPort = builder.Configuration.GetSection("Gameplay").GetValue("ApiListeningPort", -1);
 
         if (apiPort == -1)
         {
@@ -111,6 +112,7 @@ public class Program
     private static void InstallBindings(IServiceCollection services)
     {
         services.AddSingleton<Logger>();
+        services.AddSingleton<ConfigHelper>();
         
         services.AddTransient<MapData>();
         services.AddTransient<UserData>();
