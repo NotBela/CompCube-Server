@@ -11,12 +11,29 @@ public class QueueApiController(ConfigHelper helper, MapQueue queue) : Controlle
 {
     [HttpGet("/api/queue")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public ActionResult<VotingMap[]> GetQueue(string secret)
     {
         if (secret != helper.Secret)
-            return Unauthorized();
+            return Forbid();
 
         return queue.GetMaps().ToArray();
     }
+
+    [HttpPut("/api/queue/create-batch")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public IActionResult CreateBatch(string secret, int count, int batch)
+    {
+        if (secret != helper.Secret)
+            return Forbid();
+
+        var maps = queue.GetMaps().Take(count);
+        
+        foreach (var map in maps)
+            queue.RemoveFromQueueAndAdd(map, batch);
+
+        return Ok();
+    }
+    
 }
