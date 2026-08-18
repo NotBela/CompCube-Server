@@ -29,7 +29,7 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
         {
-            // ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
+            ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
         });
 
         _useDiscordIntegration = builder.Configuration.GetSection("Discord").GetValue<bool>("UseDiscordIntegration");
