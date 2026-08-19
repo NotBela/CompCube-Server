@@ -14,4 +14,12 @@ public class ClientFactory(IServiceProvider services)
         client.Init(socket, userInfo, finishedTask);
         return client;
     }
+
+    public IConnectedClient CreateDebugClient()
+    {
+        var client = ActivatorUtilities.CreateInstance<DummyConnectedClient>(services);
+        
+        client.Init(new UserInfo("debug", "0", 1000, null, 1, null, false, 0, 0, 0, 0));
+        return client;
+    }
 }

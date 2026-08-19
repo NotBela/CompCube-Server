@@ -7,7 +7,7 @@ using CompCube_Server.Interfaces;
 
 namespace CompCube_Server.Networking.Client;
 
-public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnectedClient
+public class DummyConnectedClient(MapData mapData) : IConnectedClient
 {
     public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
     public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
@@ -15,7 +15,14 @@ public class DummyConnectedClient(UserInfo userInfo, MapData mapData) : IConnect
     public event Action<IConnectedClient>? OnDisconnected;
 
     public bool IsConnectionAlive => true;
-    public UserInfo UserInfo => userInfo;
+    public UserInfo UserInfo => _userInfo ?? throw new Exception("Debug client accessed before initialization!");
+    
+    private UserInfo? _userInfo;
+
+    public void Init(UserInfo userInfo)
+    {
+        _userInfo = userInfo;
+    }
 
     public async Task SendPacket(ServerPacket packet)
     {
