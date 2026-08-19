@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 public class ConnectionManager : ControllerBase
 {
     private readonly UserData _userData;
