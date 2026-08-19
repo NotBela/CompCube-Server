@@ -12,29 +12,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace CompCube_Server.Gameplay.Matchmaking;
 
 [ApiExplorerSettings(IgnoreApi = true)]
-public class ConnectionManager : ControllerBase
+public partial class ConnectionManager(
+    UserData userData,
+    ILogger<ConnectionManager> logger,
+    QueueManager queueManager,
+    ClientFactory clientFactory,
+    TimeoutManager timeoutManager,
+    ConfigHelper config)
+    : ControllerBase
 {
-    private readonly UserData _userData;
-    private readonly QueueManager _queueManager;
-    private readonly ILogger<ConnectionManager> _logger;
-    private readonly ClientFactory _clientFactory;
-    private readonly TimeoutManager _timeoutManager;
-    private readonly ConfigHelper _config;
-    
     private readonly List<IConnectedClient> _connectedClients = [];
-    
-    public ConnectionManager(UserData userData, ILogger<ConnectionManager> logger, QueueManager queueManager, ClientFactory clientFactory, TimeoutManager timeoutManager, ConfigHelper config)
-    {
-        _userData = userData;
-        _logger = logger;
-        _queueManager = queueManager;
-        _clientFactory = clientFactory;
-        _timeoutManager = timeoutManager;
-        _config = config;
-
-        // Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
-        _logger.LogInformation("Started listening for clients");
-    }
 
     [Route("queue/{queueName}")]
     public async Task HandleWebSocket(string queueName)
@@ -58,9 +45,9 @@ public class ConnectionManager : ControllerBase
         
         var tcs = new TaskCompletionSource();
 
-        var userInfo = _userData.UpdateUserDataOnLogin(userId, username);
+        var userInfo = userData.UpdateUserDataOnLogin(userId, username);
 
-        var connectedClient = _clientFactory.Create(userInfo, websocket, tcs);
+        var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
 
         if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
         {
@@ -74,19 +61,19 @@ public class ConnectionManager : ControllerBase
             return;
         }
 
-        if (_timeoutManager.IsUserTimedOut(userId))
+        if (timeoutManager.IsUserTimedOut(userId))
         {
-            await connectedClient.DisconnectAbruptlyAsync($"You have been timed out temporarily.\nTry again in {(int) _timeoutManager.GetRemainingTimeoutTime(userId).TotalMinutes + 1} minute(s)");
+            await connectedClient.DisconnectAbruptlyAsync($"You have been timed out temporarily.\nTry again in {(int) timeoutManager.GetRemainingTimeoutTime(userId).TotalMinutes + 1} minute(s)");
             return;
         }
 
-        if (_config.WhitelistEnabled && !_config.WhitelistedIds.Contains(userId))
+        if (config.WhitelistEnabled && !config.WhitelistedIds.Contains(userId))
         {
             await connectedClient.DisconnectAbruptlyAsync("You are not whitelisted!");
             return;
         }
         
-        var queue = _queueManager.GetQueueFromName(queueName);
+        var queue = queueManager.GetQueueFromName(queueName);
 
         if (queue == null)
         {
@@ -96,6 +83,11 @@ public class ConnectionManager : ControllerBase
         
         queue.AddClientToPool(connectedClient);
         
+        _connectedClients.Add(connectedClient);
+        connectedClient.OnDisconnected += OnDisconnected;
+        
+        LogUsernameUseridJoinedQueueQueue(logger, username, userId, queue);
+        
         await tcs.Task;
     }
 
@@ -104,6 +96,12 @@ public class ConnectionManager : ControllerBase
         client.OnDisconnected -= OnDisconnected;
         
         _connectedClients.Remove(client);
-        _logger.LogInformation("{UserInfoUsername} ({UserInfoUserId}) disconnected", client.UserInfo.Username, client.UserInfo.UserId);
+        LogUserinfousernameUserinfouseridDisconnected(logger, client.UserInfo.Username, client.UserInfo.UserId);
     }
+
+    [LoggerMessage(LogLevel.Information, "{userName} ({userId}) joined queue {queue}")]
+    static partial void LogUsernameUseridJoinedQueueQueue(ILogger<ConnectionManager> logger, string userName, string userId, IQueue queue);
+
+    [LoggerMessage(LogLevel.Information, "{UserInfoUsername} ({UserInfoUserId}) disconnected")]
+    static partial void LogUserinfousernameUserinfouseridDisconnected(ILogger<ConnectionManager> logger, string UserInfoUsername, string UserInfoUserId);
 }
