@@ -114,7 +114,7 @@ public class StandardCompetitiveQueue : StandardQueue
             var match = _gameMatchFactory.CreateNewMatch(
                 a.Client,
                 b.Client,
-                new MatchSettings(true, true, 75, 50)
+                new MatchSettings(true, true, 100)
             );
 
             match.StartMatch();

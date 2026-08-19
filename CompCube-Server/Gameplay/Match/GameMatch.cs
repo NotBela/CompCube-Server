@@ -70,7 +70,8 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
             var winner = GetOtherClient(client);
             var loser = client;
             
-            timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId, new TimeSpan(0, 10, 0));
+            if (_matchSettings.Competitive)
+                timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId, new TimeSpan(0, 10, 0));
 
             var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
             
@@ -242,7 +243,7 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
     {
         var p = (1.0 / (1.0 + Math.Pow(10, ((winner.Mmr - loser.Mmr) / 400.0))));
 
-        return (int) (100 * p);
+        return (int) (_matchSettings.KFactor * p);
     }
 }
 

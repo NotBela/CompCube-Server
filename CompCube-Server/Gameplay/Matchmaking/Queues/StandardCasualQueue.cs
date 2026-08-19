@@ -23,7 +23,7 @@ public class StandardCasualQueue(GameMatchFactory gameMatchFactory) : StandardQu
             return;
         }
 
-        var match = gameMatchFactory.CreateNewMatch(client, _otherClient, new MatchSettings(true, false, 0, 0));
+        var match = gameMatchFactory.CreateNewMatch(client, _otherClient, new MatchSettings(true, true, 100));
 
         _otherClient.OnDisconnected -= HandleClientDisconnect;
         _otherClient = null;

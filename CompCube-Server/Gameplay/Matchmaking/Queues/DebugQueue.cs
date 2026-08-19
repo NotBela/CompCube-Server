@@ -11,7 +11,7 @@ public class DebugQueue(ILogger<DebugQueue> logger, ClientFactory clientFactory,
     {
         logger.LogInformation("Started debug match with {userName}", client.UserInfo.Username);
         
-        var match = gameMatchFactory.CreateNewMatch(client, clientFactory.CreateDebugClient(), new MatchSettings(false, false, 0, 0));
+        var match = gameMatchFactory.CreateNewMatch(client, clientFactory.CreateDebugClient(), new MatchSettings(false, false, 100));
         match.StartMatch();
     }
 }
