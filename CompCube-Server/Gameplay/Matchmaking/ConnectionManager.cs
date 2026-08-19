@@ -7,10 +7,11 @@ using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Networking.Client;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
-public class ConnectionManager
+public class ConnectionManager : ControllerBase
 {
     private readonly UserData _userData;
     private readonly QueueManager _queueManager;
@@ -34,98 +35,68 @@ public class ConnectionManager
         _logger.LogInformation("Started listening for clients");
     }
 
-    public async Task HandleWebSocket(WebSocket socket, TaskCompletionSource socketFinishedTcs)
+    [Route("queue/{queueName}")]
+    public async Task HandleWebSocket(string queueName)
     {
-        var buffer = new byte[1024];
-
-        var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-        buffer = buffer[..result.Count];
-
-        if (result.MessageType == WebSocketMessageType.Close)
+        if (!HttpContext.WebSockets.IsWebSocketRequest)
         {
-            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
+            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var websocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+
+        if (!HttpContext.Request.Headers.TryGetValue("UserId", out var userIdHeader) || !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader))
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
         
-        var json = Encoding.UTF8.GetString(buffer);
+        var userId = userIdHeader.First() ?? throw new Exception("No UserId!");
+        var username = usernameHeader.First() ?? throw new Exception("No UserName!");
+        
+        var tcs = new TaskCompletionSource();
 
-        var couldParsePacket = UserPacket.TryDeserialize(json, out var packet);
+        var userInfo = _userData.UpdateUserDataOnLogin(userId, username);
 
-        if (!couldParsePacket)
+        var connectedClient = _clientFactory.Create(userInfo, websocket, tcs);
+
+        if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
         {
-            _logger.LogError("Could not parse packet from client.");
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (packet is not JoinRequestPacket joinRequestPacket)
-        {
-            _logger.LogError("Invalid packet from client.");
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (_connectedClients.Any(i => i.UserInfo.UserId == joinRequestPacket.UserId))
-        {
-            var bytes = new JoinResponsePacket(false, "You are logged in from another location!").SerializeToBytes();
-            
-            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (_config.WhitelistEnabled && !_config.WhitelistedIds.Contains(joinRequestPacket.UserId))
-        {
-            var bytes = new  JoinResponsePacket(false, "You are not whitelisted!").SerializeToBytes();
-            
-            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
+            await connectedClient.DisconnectAbruptlyAsync("You are logged in from another location!");
             return;
         }
         
-        var userInfo = _userData.UpdateUserDataOnLogin(joinRequestPacket.UserId, joinRequestPacket.UserName);
+        if (userInfo.Banned)
+        {
+            await connectedClient.DisconnectAbruptlyAsync("You have been banned from CompCube.");
+            return;
+        }
 
-        var client = _clientFactory.Create(userInfo, socket, socketFinishedTcs);
+        if (_timeoutManager.IsUserTimedOut(userId))
+        {
+            await connectedClient.DisconnectAbruptlyAsync($"You have been timed out temporarily.\nTry again in {(int) _timeoutManager.GetRemainingTimeoutTime(userId).TotalMinutes + 1} minute(s)");
+            return;
+        }
+
+        if (_config.WhitelistEnabled && !_config.WhitelistedIds.Contains(userId))
+        {
+            await connectedClient.DisconnectAbruptlyAsync("You are not whitelisted!");
+            return;
+        }
         
-        if (client.UserInfo.Banned)
-        {
-            await client.SendPacket(new JoinResponsePacket(false, "You have been banned from CompCube"));
-            await client.Disconnect();
-            return;
-        }
-
-        if (_timeoutManager.IsUserTimedOut(joinRequestPacket.UserId))
-        {
-            await client.SendPacket(new JoinResponsePacket(false, $"You have been timed out temporarily.\nTry again in {((int) _timeoutManager.GetRemainingTimeoutTime(joinRequestPacket.UserId).TotalMinutes) + 1} minute(s)"));
-            await client.Disconnect();
-            return;
-        }
-
-        var queue = _queueManager.GetQueueFromName(joinRequestPacket.Queue);
+        var queue = _queueManager.GetQueueFromName(queueName);
 
         if (queue == null)
         {
-            await client.SendPacket(new JoinResponsePacket(false, "Invalid queue"));
-            await client.Disconnect();
+            await connectedClient.DisconnectAbruptlyAsync("Invalid Queue!");
             return;
         }
         
-        await client.SendPacket(new JoinResponsePacket(true, ""));
+        queue.AddClientToPool(connectedClient);
         
-        queue.AddClientToPool(client);
-        
-        _connectedClients.Add(client);
-        client.OnDisconnected += OnDisconnected;
-        
-        _logger.LogInformation("User {UserInfoUsername} ({UserInfoUserId}) joined queue {QueueName}", client.UserInfo.Username, client.UserInfo.UserId, queue.QueueName);
+        await tcs.Task;
     }
-
-    
 
     private void OnDisconnected(IConnectedClient client)
     {
