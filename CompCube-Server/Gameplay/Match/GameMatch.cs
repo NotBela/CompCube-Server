@@ -8,11 +8,12 @@ using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Data;
+using CompCube_Server.Gameplay.Matchmaking;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData rankingData)
+public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData rankingData, TimeoutManager timeoutManager)
 {
     private MatchSettings _matchSettings;
 
@@ -54,8 +55,6 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
     {
         _red.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
         _blue.OnClientFinishedDiscarding += HandleClientFinishedDiscarding;
-        
-        _red.ClientDidDisconnect += HandleClientDisconnected;
 
         await _red.StartMatchForClient(_blue.ConnectedClient.UserInfo);
         await _blue.StartMatchForClient(_red.ConnectedClient.UserInfo);
@@ -70,10 +69,10 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
 
             var winner = GetOtherClient(client);
             var loser = client;
+            
+            timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId, new TimeSpan(0, 10, 0));
 
             var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
-            
-            Console.WriteLine(eloChange);
             
             ApplyEloChanges(winner, loser, eloChange);
             

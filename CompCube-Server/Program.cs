@@ -123,6 +123,7 @@ public class Program
         services.AddSingleton<ServerStatusManager>();
         
         services.AddSingleton<ConnectionManager>();
+        services.AddSingleton<TimeoutManager>();
 
         services.AddSingleton<GameMatchFactory>();
         services.AddSingleton<ClientFactory>();

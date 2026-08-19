@@ -15,15 +15,17 @@ public class ConnectionManager
     private readonly QueueManager _queueManager;
     private readonly ILogger<ConnectionManager> _logger;
     private readonly ClientFactory _clientFactory;
+    private readonly TimeoutManager _timeoutManager;
     
     private readonly List<IConnectedClient> _connectedClients = [];
     
-    public ConnectionManager(UserData userData, ILogger<ConnectionManager> logger, QueueManager queueManager, ClientFactory clientFactory)
+    public ConnectionManager(UserData userData, ILogger<ConnectionManager> logger, QueueManager queueManager, ClientFactory clientFactory, TimeoutManager timeoutManager)
     {
         _userData = userData;
         _logger = logger;
         _queueManager = queueManager;
         _clientFactory = clientFactory;
+        _timeoutManager = timeoutManager;
 
         Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
         _logger.LogInformation("Started listening for clients");
@@ -80,6 +82,13 @@ public class ConnectionManager
         if (client.UserInfo.Banned)
         {
             await client.SendPacket(new JoinResponsePacket(false, "You have been banned from CompCube"));
+            await client.Disconnect();
+            return;
+        }
+
+        if (_timeoutManager.IsUserTimedOut(joinRequestPacket.UserId))
+        {
+            await client.SendPacket(new JoinResponsePacket(false, $"You have been timed out temporarily.\nTry again in {((int) _timeoutManager.GetRemainingTimeoutTime(joinRequestPacket.UserId).TotalMinutes) + 1} minute(s)"));
             await client.Disconnect();
             return;
         }
