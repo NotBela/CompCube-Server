@@ -7,158 +7,101 @@ using CompCube_Server.Config;
 using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
 using CompCube_Server.Networking.Client;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
 
-public class ConnectionManager
+[ApiExplorerSettings(IgnoreApi = true)]
+public partial class ConnectionManager(
+    UserData userData,
+    ILogger<ConnectionManager> logger,
+    QueueManager queueManager,
+    ClientFactory clientFactory,
+    TimeoutManager timeoutManager,
+    ConfigHelper config)
+    : ControllerBase
 {
-    private readonly UserData _userData;
-    private readonly QueueManager _queueManager;
-    private readonly ILogger<ConnectionManager> _logger;
-    private readonly ClientFactory _clientFactory;
-    private readonly TimeoutManager _timeoutManager;
-    private readonly ConfigHelper _config;
-    
     private readonly List<IConnectedClient> _connectedClients = [];
-    
-    public ConnectionManager(UserData userData, ILogger<ConnectionManager> logger, QueueManager queueManager, ClientFactory clientFactory, TimeoutManager timeoutManager, ConfigHelper config)
+
+    [Route("queue/{queueName}")]
+    public async Task HandleWebSocket(string queueName)
     {
-        _userData = userData;
-        _logger = logger;
-        _queueManager = queueManager;
-        _clientFactory = clientFactory;
-        _timeoutManager = timeoutManager;
-        _config = config;
-
-        Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
-        _logger.LogInformation("Started listening for clients");
-    }
-
-    public async Task HandleWebSocket(WebSocket socket, TaskCompletionSource socketFinishedTcs)
-    {
-        var buffer = new byte[1024];
-
-        var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-        buffer = buffer[..result.Count];
-
-        if (result.MessageType == WebSocketMessageType.Close)
+        if (!HttpContext.WebSockets.IsWebSocketRequest)
         {
-            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
+            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var websocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+
+        if (!HttpContext.Request.Headers.TryGetValue("UserId", out var userIdHeader) || !HttpContext.Request.Headers.TryGetValue("UserName", out var usernameHeader))
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
         
-        var json = Encoding.UTF8.GetString(buffer);
+        var userId = userIdHeader.First() ?? throw new Exception("No UserId!");
+        var username = usernameHeader.First() ?? throw new Exception("No UserName!");
+        
+        var tcs = new TaskCompletionSource();
 
-        var couldParsePacket = UserPacket.TryDeserialize(json, out var packet);
+        var userInfo = userData.UpdateUserDataOnLogin(userId, username);
 
-        if (!couldParsePacket)
+        var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
+
+        if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
         {
-            _logger.LogError("Could not parse packet from client.");
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (packet is not JoinRequestPacket joinRequestPacket)
-        {
-            _logger.LogError("Invalid packet from client.");
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (_connectedClients.Any(i => i.UserInfo.UserId == joinRequestPacket.UserId))
-        {
-            var bytes = new JoinResponsePacket(false, "You are logged in from another location!").SerializeToBytes();
-            
-            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
-            return;
-        }
-
-        if (_config.WhitelistEnabled && !_config.WhitelistedIds.Contains(joinRequestPacket.UserId))
-        {
-            var bytes = new  JoinResponsePacket(false, "You are not whitelisted!").SerializeToBytes();
-            
-            await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-            await socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "", CancellationToken.None);
-            socketFinishedTcs.SetResult();
+            await connectedClient.DisconnectAbruptlyAsync("You are logged in from another location!");
             return;
         }
         
-        var userInfo = _userData.UpdateUserDataOnLogin(joinRequestPacket.UserId, joinRequestPacket.UserName);
+        if (userInfo.Banned)
+        {
+            await connectedClient.DisconnectAbruptlyAsync("You have been banned from CompCube.");
+            return;
+        }
 
-        var client = _clientFactory.Create(userInfo, socket, socketFinishedTcs);
+        if (timeoutManager.IsUserTimedOut(userId))
+        {
+            await connectedClient.DisconnectAbruptlyAsync($"You have been timed out temporarily.\nTry again in {(int) timeoutManager.GetRemainingTimeoutTime(userId).TotalMinutes + 1} minute(s)");
+            return;
+        }
+
+        if (config.WhitelistEnabled && !config.WhitelistedIds.Contains(userId))
+        {
+            await connectedClient.DisconnectAbruptlyAsync("You are not whitelisted!");
+            return;
+        }
         
-        if (client.UserInfo.Banned)
-        {
-            await client.SendPacket(new JoinResponsePacket(false, "You have been banned from CompCube"));
-            await client.Disconnect();
-            return;
-        }
-
-        if (_timeoutManager.IsUserTimedOut(joinRequestPacket.UserId))
-        {
-            await client.SendPacket(new JoinResponsePacket(false, $"You have been timed out temporarily.\nTry again in {((int) _timeoutManager.GetRemainingTimeoutTime(joinRequestPacket.UserId).TotalMinutes) + 1} minute(s)"));
-            await client.Disconnect();
-            return;
-        }
-
-        var queue = _queueManager.GetQueueFromName(joinRequestPacket.Queue);
+        var queue = queueManager.GetQueueFromName(queueName);
 
         if (queue == null)
         {
-            await client.SendPacket(new JoinResponsePacket(false, "Invalid queue"));
-            await client.Disconnect();
+            await connectedClient.DisconnectAbruptlyAsync("Invalid Queue!");
             return;
         }
         
-        await client.SendPacket(new JoinResponsePacket(true, ""));
+        queue.AddClientToPool(connectedClient);
         
-        queue.AddClientToPool(client);
+        _connectedClients.Add(connectedClient);
+        connectedClient.OnDisconnected += OnDisconnected;
         
-        _connectedClients.Add(client);
-        client.OnDisconnected += OnDisconnected;
+        LogUsernameUseridJoinedQueueQueue(logger, username, userId, queue);
         
-        _logger.LogInformation("User {UserInfoUsername} ({UserInfoUserId}) joined queue {QueueName}", client.UserInfo.Username, client.UserInfo.UserId, queue.QueueName);
+        await tcs.Task;
     }
-
-    private async Task PollAllClients()
-    {
-        while (true)
-        {
-            await Task.Delay(5000);
-            
-            var clientsToPoll = _connectedClients.ToArray();
-
-            foreach (var client in clientsToPoll)
-            {
-                try
-                {
-                    if (client.IsConnectionAlive)
-                        continue;
-                    await client.Disconnect();
-                    _logger.LogInformation("disconnected {UserInfoUsername} via polling", client.UserInfo.Username);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("Client {UserInfoUserId} could not be polled for disconnection! {Exception}", client.UserInfo.UserId, e);
-                }
-            }
-            
-            // _logger.Info($"polled {clientsToPoll.Length} clients");
-        }
-    }
-
-    
 
     private void OnDisconnected(IConnectedClient client)
     {
         client.OnDisconnected -= OnDisconnected;
         
         _connectedClients.Remove(client);
-        _logger.LogInformation("{UserInfoUsername} ({UserInfoUserId}) disconnected", client.UserInfo.Username, client.UserInfo.UserId);
+        LogUserinfousernameUserinfouseridDisconnected(logger, client.UserInfo.Username, client.UserInfo.UserId);
     }
+
+    [LoggerMessage(LogLevel.Information, "{userName} ({userId}) joined queue {queue}")]
+    static partial void LogUsernameUseridJoinedQueueQueue(ILogger<ConnectionManager> logger, string userName, string userId, IQueue queue);
+
+    [LoggerMessage(LogLevel.Information, "{UserInfoUsername} ({UserInfoUserId}) disconnected")]
+    static partial void LogUserinfousernameUserinfouseridDisconnected(ILogger<ConnectionManager> logger, string UserInfoUsername, string UserInfoUserId);
 }

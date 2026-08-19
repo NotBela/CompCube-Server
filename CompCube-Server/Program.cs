@@ -87,23 +87,6 @@ public class Program
         {
             KeepAliveInterval = TimeSpan.FromSeconds(30),
         });
-
-        host.Map("", async context =>
-        {
-            if (context.WebSockets.IsWebSocketRequest)
-            {
-                using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                var socketFinishedTcs = new TaskCompletionSource();
-                
-                await connectionManager.HandleWebSocket(webSocket, socketFinishedTcs);
-
-                await socketFinishedTcs.Task;
-            }
-            else
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            }
-        });
         
         host.Run();
     }
