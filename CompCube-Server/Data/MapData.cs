@@ -1,15 +1,14 @@
 ﻿using CompCube_Models.Models.Map;
-using CompCube_Server.Logging;
 
 namespace CompCube_Server.Data;
 
-public class MapData
+public partial class MapData
 {
-    private readonly Logger _logger;
+    private readonly ILogger<MapData> _logger;
     private readonly DbSession _dbSession;
     private readonly IConfiguration _config;
 
-    public MapData(Logger logger, DbSession dbSession, IConfiguration config)
+    public MapData(ILogger<MapData> logger, DbSession dbSession, IConfiguration config)
     {
         _logger = logger;
         _dbSession = dbSession;
@@ -58,7 +57,7 @@ public class MapData
 
             if (!Enum.TryParse<VotingMap.DifficultyType>(reader.GetString(1), out var difficulty))
             {
-                _logger.Error($"Could not parse difficulty type for hash {hash}: {reader.GetString(1)}");
+                LogCouldNotParseDifficultyTypeForHashHashGetstring(hash, reader.GetString(1));
                 continue;
             }
             
@@ -66,7 +65,7 @@ public class MapData
 
             if (!Enum.TryParse<VotingMap.Category>(categoryString, out var category))
             {
-                _logger.Error($"Could not parse category for hash {hash}: {categoryString}");
+                LogCouldNotParseCategoryForHashHashCategorystring(hash, categoryString);
                 continue;
             }
 
@@ -80,4 +79,10 @@ public class MapData
 
         return maps;
     }
+
+    [LoggerMessage(LogLevel.Error, "Could not parse category for hash {Hash}: {CategoryString}")]
+    partial void LogCouldNotParseCategoryForHashHashCategorystring(string Hash, string CategoryString);
+
+    [LoggerMessage(LogLevel.Error, "Could not parse difficulty type for hash {Hash}: {GetString}")]
+    partial void LogCouldNotParseDifficultyTypeForHashHashGetstring(string Hash, string GetString);
 }

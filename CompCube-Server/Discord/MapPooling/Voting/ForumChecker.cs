@@ -1,5 +1,4 @@
-﻿using CompCube_Server.Logging;
-using NetCord;
+﻿using NetCord;
 using NetCord.Rest;
 
 namespace CompCube_Server.Discord.MapPooling.Voting;
@@ -9,10 +8,10 @@ public class ForumChecker
     private readonly RestClient _restClient;
     private readonly DiscordConfigHelper _configHelper;
     private readonly MapVoteHelper _mapVoteHelper;
-    private readonly Logger _logger;
+    private readonly ILogger<ForumChecker> _logger;
     private readonly MapLog _mapLog;
     
-    public ForumChecker(RestClient restClient, DiscordConfigHelper configHelper, MapVoteHelper mapVoteHelper, Logger logger, MapLog mapLog)
+    public ForumChecker(RestClient restClient, DiscordConfigHelper configHelper, MapVoteHelper mapVoteHelper, ILogger<ForumChecker> logger, MapLog mapLog)
     {
         _restClient = restClient;
         _configHelper = configHelper;
@@ -50,7 +49,7 @@ public class ForumChecker
             }
             catch (Exception e)
             {
-                _logger.Error(e);
+                _logger.LogError(e.ToString());
             }
         }
     }

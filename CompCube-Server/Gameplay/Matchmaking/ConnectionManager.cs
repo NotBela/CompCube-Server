@@ -5,7 +5,6 @@ using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Data;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Logging;
 using CompCube_Server.Networking.Client;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
@@ -13,25 +12,21 @@ namespace CompCube_Server.Gameplay.Matchmaking;
 public class ConnectionManager
 {
     private readonly UserData _userData;
-    private readonly Logger _logger;
     private readonly QueueManager _queueManager;
+    private readonly ILogger<ConnectionManager> _logger;
+    private readonly ClientFactory _clientFactory;
     
     private readonly List<IConnectedClient> _connectedClients = [];
     
-    public ConnectionManager(UserData userData, Logger logger, QueueManager queueManager)
+    public ConnectionManager(UserData userData, ILogger<ConnectionManager> logger, QueueManager queueManager, ClientFactory clientFactory)
     {
         _userData = userData;
         _logger = logger;
         _queueManager = queueManager;
-        
-        Start();
-    }
+        _clientFactory = clientFactory;
 
-    public void Start()
-    {
         Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
-        
-        _logger.Info("Started listening for clients");
+        _logger.LogInformation("Started listening for clients");
     }
 
     public async Task HandleWebSocket(WebSocket socket, TaskCompletionSource socketFinishedTcs)
@@ -54,7 +49,7 @@ public class ConnectionManager
 
         if (!couldParsePacket)
         {
-            _logger.Error("Could not parse packet from client.");
+            _logger.LogError("Could not parse packet from client.");
             await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
             socketFinishedTcs.SetResult();
             return;
@@ -62,7 +57,7 @@ public class ConnectionManager
 
         if (packet is not JoinRequestPacket joinRequestPacket)
         {
-            _logger.Error("Invalid packet from client.");
+            _logger.LogError("Invalid packet from client.");
             await socket.CloseOutputAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
             socketFinishedTcs.SetResult();
             return;
@@ -80,7 +75,7 @@ public class ConnectionManager
         
         var userInfo = _userData.UpdateUserDataOnLogin(joinRequestPacket.UserId, joinRequestPacket.UserName);
 
-        var client = new ConnectedClient(socket, userInfo, socketFinishedTcs, _logger);
+        var client = _clientFactory.Create(userInfo, socket, socketFinishedTcs);
 
         if (client.UserInfo.Banned)
         {
@@ -105,7 +100,7 @@ public class ConnectionManager
         _connectedClients.Add(client);
         client.OnDisconnected += OnDisconnected;
         
-        _logger.Info($"User {client.UserInfo.Username} ({client.UserInfo.UserId}) joined queue {queue.QueueName}");
+        _logger.LogInformation("User {UserInfoUsername} ({UserInfoUserId}) joined queue {QueueName}", client.UserInfo.Username, client.UserInfo.UserId, queue.QueueName);
     }
 
     private async Task PollAllClients()
@@ -123,11 +118,11 @@ public class ConnectionManager
                     if (client.IsConnectionAlive)
                         continue;
                     await client.Disconnect();
-                    _logger.Info($"disconnected {client.UserInfo.Username} via polling");
+                    _logger.LogInformation("disconnected {UserInfoUsername} via polling", client.UserInfo.Username);
                 }
                 catch (Exception e)
                 {
-                    _logger.Error($"Client {client.UserInfo.UserId} could not be polled for disconnection! {e}");
+                    _logger.LogError("Client {UserInfoUserId} could not be polled for disconnection! {Exception}", client.UserInfo.UserId, e);
                 }
             }
             
@@ -142,6 +137,6 @@ public class ConnectionManager
         client.OnDisconnected -= OnDisconnected;
         
         _connectedClients.Remove(client);
-        _logger.Info($"{client.UserInfo.Username} ({client.UserInfo.UserId}) disconnected");
+        _logger.LogInformation("{UserInfoUsername} ({UserInfoUserId}) disconnected", client.UserInfo.Username, client.UserInfo.UserId);
     }
 }

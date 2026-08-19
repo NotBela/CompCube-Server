@@ -2,11 +2,10 @@
 using BeatSaverSharp.Models;
 using CompCube_Server.Api.Controllers;
 using CompCube_Server.Data;
-using CompCube_Server.Logging;
 
 namespace CompCube_Server.Api.BeatSaver;
 
-public class BeatSaverApiWrapper(MapData mapData, Logger logger)
+public class BeatSaverApiWrapper(MapData mapData, ILogger<BeatSaverApiWrapper> logger)
 {
     private readonly BeatSaverSharp.BeatSaver _beatSaver = new(new BeatSaverOptions("CompCube-Server", new Version("1.0.0")));
 
@@ -45,7 +44,7 @@ public class BeatSaverApiWrapper(MapData mapData, Logger logger)
             }
             catch (Exception e)
             {
-                logger.Error("Failed to download missing beatmaps: " + e);
+                logger.LogError("Failed to download missing beatmaps: {e}", e.ToString());
             }
         }
     }

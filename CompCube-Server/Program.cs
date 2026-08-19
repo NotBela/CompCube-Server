@@ -8,7 +8,6 @@ using CompCube_Server.Discord.MapPooling.Voting;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Gameplay.Matchmaking;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Logging;
 using CompCube_Server.Networking.ServerStatus;
 using NetCord;
 using NetCord.Gateway;
@@ -111,7 +110,6 @@ public class Program
         
     private static void InstallBindings(IServiceCollection services)
     {
-        services.AddSingleton<Logger>();
         services.AddSingleton<ConfigHelper>();
         
         services.AddTransient<MapData>();
@@ -127,6 +125,7 @@ public class Program
         services.AddSingleton<ConnectionManager>();
 
         services.AddSingleton<GameMatchFactory>();
+        services.AddSingleton<ClientFactory>();
         
         services.AddSingleton<QueueManager>();
         

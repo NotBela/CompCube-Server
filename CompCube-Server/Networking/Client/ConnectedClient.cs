@@ -6,35 +6,33 @@ using CompCube_Models.Models.Packets;
 using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Logging;
 
 namespace CompCube_Server.Networking.Client;
 
-public class ConnectedClient : IConnectedClient, IAsyncDisposable
+public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient, IAsyncDisposable
 {
-    private readonly Logger _logger;
-    
-    private readonly WebSocket _client;
-    private readonly TaskCompletionSource _socketFinishedTcs;
+    private WebSocket _client;
+    private TaskCompletionSource _socketFinishedTcs;
 
     public event Action<DiscardMapsPacket, IConnectedClient>? OnUserDiscardedMaps;
     public event Action<MapSelectionPacket, IConnectedClient>? OnMapSelection;
     public event Action<ScoreSubmissionPacket, IConnectedClient>? OnScoreSubmission;
     public event Action<IConnectedClient>? OnDisconnected;
 
-    public UserInfo UserInfo { get; }
+    private UserInfo? _userInfo;
+
+    public UserInfo UserInfo => _userInfo ?? throw new Exception("Client accessed before initialization!");
     
     private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     private bool _isDisconnected = false;
 
-    public ConnectedClient(WebSocket client, UserInfo userInfo, TaskCompletionSource socketFinishedTcs, Logger logger)
+    public void Init(WebSocket socket, UserInfo userInfo, TaskCompletionSource socketFinishedTcs)
     {
-        _client = client;
-        UserInfo = userInfo;
-        _logger = logger;
+        _client = socket;
+        _userInfo = userInfo;
         _socketFinishedTcs = socketFinishedTcs;
-
+        
         Task.Factory.StartNew(ListenToClient, TaskCreationOptions.LongRunning);
     }
 
@@ -64,7 +62,7 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
 
                 if (!packetWasDeserialized)
                 {
-                    _logger.Error($"Failed to deserialize packet from client {UserInfo.UserId}");
+                    logger.LogError($"Failed to deserialize packet from client {UserInfo.UserId}");
                     await Disconnect();
                     return;
                 }
@@ -82,7 +80,7 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
         }
         catch (Exception e)
         {
-            _logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -105,7 +103,7 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
         }
         catch (Exception e)
         {
-            _logger.Error(e);
+            logger.LogError(e.ToString());
         }
         finally
         {
@@ -156,7 +154,7 @@ public class ConnectedClient : IConnectedClient, IAsyncDisposable
         }
         catch (Exception e)
         {
-            _logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 

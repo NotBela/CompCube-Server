@@ -7,13 +7,12 @@ using CompCube_Models.Models.Packets.ServerPackets;
 using CompCube_Models.Models.Packets.UserPackets;
 using CompCube_Server.Gameplay.Match.Dealer;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Logging;
 using CompCube_Server.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CompCube_Server.Gameplay.Match;
 
-public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
+public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData rankingData)
 {
     private MatchSettings _matchSettings;
 
@@ -47,7 +46,7 @@ public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
         }
         catch (Exception e)
         {
-            logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -82,7 +81,7 @@ public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
         }
         catch (Exception e)
         {
-            logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -102,7 +101,7 @@ public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
         }
         catch (Exception e)
         {
-            logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -140,7 +139,7 @@ public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
         }
         catch (Exception e)
         {
-            logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -193,7 +192,7 @@ public class GameMatch(MapData mapData, Logger logger, RankingData rankingData)
         }
         catch (Exception e)
         {
-            logger.Error(e);
+            logger.LogError(e.ToString());
         }
     }
 
@@ -269,9 +268,9 @@ public class ClientManager
     
     public event Action<ClientManager>? ClientDidDisconnect;
     
-    private readonly Logger _logger;
+    private readonly ILogger<GameMatch> _logger;
     
-    public ClientManager(IConnectedClient client, IDealer dealer, bool isRed, Logger logger)
+    public ClientManager(IConnectedClient client, IDealer dealer, bool isRed, ILogger<GameMatch> logger)
     {
         ConnectedClient = client;
         
@@ -326,7 +325,7 @@ public class ClientManager
         }
         catch (Exception e)
         {
-            _logger.Error(e);
+            _logger.LogError(e.ToString());
         }
     }
 

@@ -1,6 +1,5 @@
 ﻿using CompCube_Server.Api.BeatSaver;
 using CompCube_Server.Extensions;
-using CompCube_Server.Logging;
 using NetCord;
 using NetCord.Rest;
 using NetCord.Services.ComponentInteractions;

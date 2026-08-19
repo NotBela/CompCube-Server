@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using CompCube_Server.Gameplay.Match;
 using CompCube_Server.Interfaces;
-using CompCube_Server.Logging;
 using CompCube_Server.Models.Client;
 
 namespace CompCube_Server.Gameplay.Matchmaking;
@@ -9,7 +8,7 @@ namespace CompCube_Server.Gameplay.Matchmaking;
 public class StandardCompetitiveQueue : StandardQueue
 {
     private readonly GameMatchFactory _gameMatchFactory;
-    private readonly Logger _logger;
+    private readonly ILogger<StandardCompetitiveQueue> _logger;
     
     public override string QueueName => "standard_competitive_1v1";
     
@@ -21,7 +20,7 @@ public class StandardCompetitiveQueue : StandardQueue
     private readonly Task _matchmakingTask;
 
     public StandardCompetitiveQueue(
-        Logger logger,
+        ILogger<StandardCompetitiveQueue> logger,
         GameMatchFactory gameMatchFactory)
     {
         _logger = logger;
@@ -55,7 +54,7 @@ public class StandardCompetitiveQueue : StandardQueue
     private async Task MatchmakingLoop()
     {
         var token = _cts.Token;
-        _logger.Info("Starting matchmaking loop for Standard Competitive Queue.");
+        _logger.LogInformation("Starting matchmaking loop for Standard Competitive Queue.");
         while (!token.IsCancellationRequested)
         {
             try
@@ -70,7 +69,7 @@ public class StandardCompetitiveQueue : StandardQueue
             }
             catch (Exception ex)
             {
-                _logger.Error($"Matchmaking loop error: {ex}");
+                _logger.LogError("Matchmaking loop error: {Exception}", ex);
             }
 
             await Task.Delay(2000, token);
@@ -87,7 +86,7 @@ public class StandardCompetitiveQueue : StandardQueue
 
     private void RunMatchmakingPass()
     {
-        _logger.Info("Running matchmaking pass.");
+        _logger.LogInformation("Running matchmaking pass.");
         var sorted = _clientPool
             .OrderBy(c => c.Client.UserInfo.Mmr)
             .ToList();
@@ -100,12 +99,12 @@ public class StandardCompetitiveQueue : StandardQueue
             if (!a.CanMatchWithOtherClient(b))
             {
                 i++;
-                _logger.Info($"Clients {a.Client.UserInfo.Username} and {b.Client.UserInfo.Username} cannot be matched yet. Skipping.");
+                _logger.LogInformation("Clients {UserInfoUsername} and {Username} cannot be matched yet. Skipping.", a.Client.UserInfo.Username, b.Client.UserInfo.Username);
                 continue;
             }
 
 
-            _logger.Info($"Matching clients {a.Client.UserInfo.Username} and {b.Client.UserInfo.Username} with MMRs {a.Client.UserInfo.Mmr} and {b.Client.UserInfo.Mmr}.");
+            _logger.LogInformation("Matching clients {UserInfoUsername} and {Username} with MMRs {UserInfoMmr} and {Mmr}.", a.Client.UserInfo.Username, b.Client.UserInfo.Username, a.Client.UserInfo.Mmr, b.Client.UserInfo.Mmr);
 
             _clientPool.Remove(a);
             _clientPool.Remove(b);
@@ -122,6 +121,6 @@ public class StandardCompetitiveQueue : StandardQueue
 
             i += 2;
         }
-        _logger.Info("Finished matchmaking pass.");
+        _logger.LogInformation("Finished matchmaking pass.");
     }
 }
