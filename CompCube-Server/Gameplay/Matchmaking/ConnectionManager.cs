@@ -30,7 +30,7 @@ public class ConnectionManager
         _timeoutManager = timeoutManager;
         _config = config;
 
-        Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
+        // Task.Factory.StartNew(PollAllClients, TaskCreationOptions.LongRunning);
         _logger.LogInformation("Started listening for clients");
     }
 
@@ -123,33 +123,6 @@ public class ConnectionManager
         client.OnDisconnected += OnDisconnected;
         
         _logger.LogInformation("User {UserInfoUsername} ({UserInfoUserId}) joined queue {QueueName}", client.UserInfo.Username, client.UserInfo.UserId, queue.QueueName);
-    }
-
-    private async Task PollAllClients()
-    {
-        while (true)
-        {
-            await Task.Delay(5000);
-            
-            var clientsToPoll = _connectedClients.ToArray();
-
-            foreach (var client in clientsToPoll)
-            {
-                try
-                {
-                    if (client.IsConnectionAlive)
-                        continue;
-                    await client.Disconnect();
-                    _logger.LogInformation("disconnected {UserInfoUsername} via polling", client.UserInfo.Username);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("Client {UserInfoUserId} could not be polled for disconnection! {Exception}", client.UserInfo.UserId, e);
-                }
-            }
-            
-            // _logger.Info($"polled {clientsToPoll.Length} clients");
-        }
     }
 
     
