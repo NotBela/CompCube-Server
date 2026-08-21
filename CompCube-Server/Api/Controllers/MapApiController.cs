@@ -1,5 +1,6 @@
 ﻿using CompCube_Models.Models.Map;
 using CompCube_Server.Api.BeatSaver;
+using CompCube_Server.Config;
 using CompCube_Server.Data;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -7,24 +8,15 @@ using Newtonsoft.Json.Linq;
 namespace CompCube_Server.Api.Controllers;
 
 [ApiController]
-public class MapApiController : ControllerBase
+public class MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver, ConfigHelper config) : ControllerBase
 {
-    private readonly MapData _mapData;
-    private readonly BeatSaverApiWrapper _beatSaver;
+    private readonly BeatSaverApiWrapper _beatSaver = beatSaver;
     
     public static readonly string BeatmapsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Beatmaps");
 
-    public MapApiController(MapData mapData, BeatSaverApiWrapper beatSaver)
-    {
-        _mapData = mapData;
-        _beatSaver = beatSaver;
-
-        Directory.CreateDirectory(BeatmapsPath);
-    }
-
     [HttpGet("/api/maps/hashes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<string[]> GetAllMapHashes() => _mapData.GetAllMaps().Select(i => i.Hash).ToArray();
+    public ActionResult<string[]> GetAllMapHashes() => mapData.GetAllMaps().Select(i => i.Hash).ToArray();
 
     [HttpGet("/api/maps/download/{hash}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -45,7 +37,7 @@ public class MapApiController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<string> GetPlaylist()
     {
-        var allMaps = _mapData.GetAllMaps();
+        var allMaps = mapData.GetAllMaps();
 
         var songs = new List<PlaylistSong>();
 
@@ -69,6 +61,28 @@ public class MapApiController : ControllerBase
         };
 
         return jObject.ToString();
+    }
+
+    [HttpPost("/api/maps/forceadd")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> AddMap(string secret, string hash, string difficulty, string category)
+    {
+        if (secret != config.Secret)
+            return Forbid();
+        
+        if (!Enum.TryParse<VotingMap.DifficultyType>(difficulty, out var difficultyType))
+            return BadRequest();
+        
+        if (!Enum.TryParse<VotingMap.Category>(category, out var categoryType))
+            return BadRequest();
+        
+        mapData.AddMap(new VotingMap(hash, difficultyType, categoryType), 0);
+
+        await _beatSaver.DownloadAllMissingBeatmaps();
+
+        return Ok();
     }
 }
 

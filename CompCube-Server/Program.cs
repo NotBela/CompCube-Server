@@ -27,7 +27,7 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions()
-        {
+        {   
             ContentRootPath = AppDomain.CurrentDomain.BaseDirectory,
         });
 
