@@ -9,4 +9,6 @@ public class ConfigHelper(IConfiguration config)
     public bool WhitelistEnabled => config.GetSection("Whitelist").GetValue("Enabled", false);
     
     public string[] WhitelistedIds => config.GetSection("Whitelist").GetSection("AllowedIds").Get<string[]>() ?? [];
+    
+    public int TimeoutTime => config.GetSection("Gameplay").GetValue("TimeoutTime", 10);
 }

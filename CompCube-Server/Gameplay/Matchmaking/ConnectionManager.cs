@@ -43,17 +43,18 @@ public partial class ConnectionManager(
         var userId = userIdHeader.First() ?? throw new Exception("No UserId!");
         var username = usernameHeader.First() ?? throw new Exception("No UserName!");
         
+        if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
+        {
+            await websocket.SendAsync(new ArraySegment<byte>(new AbruptDisconnectionPacket("You are logged in from another location!").SerializeToBytes()), WebSocketMessageType.Text, true, CancellationToken.None);
+            await websocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+            return;
+        }
+        
         var tcs = new TaskCompletionSource();
 
         var userInfo = userData.UpdateUserDataOnLogin(userId, username);
 
         var connectedClient = clientFactory.Create(userInfo, websocket, tcs);
-
-        if (_connectedClients.Any(i => i.UserInfo.UserId == userId))
-        {
-            await connectedClient.DisconnectAbruptlyAsync("You are logged in from another location!");
-            return;
-        }
         
         if (userInfo.Banned)
         {
@@ -81,10 +82,10 @@ public partial class ConnectionManager(
             return;
         }
         
-        queue.AddClientToPool(connectedClient);
-        
         _connectedClients.Add(connectedClient);
         connectedClient.OnDisconnected += OnDisconnected;
+        
+        queue.AddClientToPool(connectedClient);
         
         LogUsernameUseridJoinedQueueQueue(logger, username, userId, queue);
         

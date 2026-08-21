@@ -1,14 +1,16 @@
-﻿namespace CompCube_Server.Gameplay.Matchmaking;
+﻿using CompCube_Server.Config;
 
-public class TimeoutManager
+namespace CompCube_Server.Gameplay.Matchmaking;
+
+public class TimeoutManager(ConfigHelper configHelper)
 {
     private readonly Dictionary<string, DateTime> _timeouts = new();
     
     public IReadOnlyDictionary<string, DateTime> Timeouts => _timeouts;
 
-    public void TimeoutUser(string id, TimeSpan time)
+    public void TimeoutUser(string id)
     {
-        _timeouts.Add(id, DateTime.Now.Add(time));
+        _timeouts.Add(id, DateTime.Now.Add(new TimeSpan(0, configHelper.TimeoutTime, 0)));
     }
 
     public bool IsUserTimedOut(string id)

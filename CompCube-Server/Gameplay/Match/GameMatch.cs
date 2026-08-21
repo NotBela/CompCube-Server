@@ -71,7 +71,7 @@ public class GameMatch(MapData mapData, ILogger<GameMatch> logger, RankingData r
             var loser = client;
             
             if (_matchSettings.Competitive)
-                timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId, new TimeSpan(0, 10, 0));
+                timeoutManager.TimeoutUser(loser.ConnectedClient.UserInfo.UserId);
 
             var eloChange = ComputeEloChange(winner.ConnectedClient.UserInfo, loser.ConnectedClient.UserInfo);
             
