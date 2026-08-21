@@ -58,11 +58,9 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
                 if (json == "")
                     continue;
 
-                var packetWasDeserialized = UserPacket.TryDeserialize(json, out var packet);
-
-                if (!packetWasDeserialized)
+                if (!UserPacket.TryDeserialize(json, out var packet))
                 {
-                    logger.LogError($"Failed to deserialize packet from client {UserInfo.UserId}");
+                    logger.LogError("Failed to deserialize packet from client {UserInfoUserId}", UserInfo.UserId);
                     await Disconnect();
                     return;
                 }
@@ -90,9 +88,10 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
             return;
         _isDisconnected = true;
         
+        OnDisconnected?.Invoke(this);
+        
         try
         {
-            OnDisconnected?.Invoke(this);
             await _client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", _cancellationTokenSource.Token);
         }
         catch (OperationCanceledException)
@@ -108,6 +107,7 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
         finally
         {
             _socketFinishedTcs.SetResult();
+            _client.Dispose();
         }
     }
 
