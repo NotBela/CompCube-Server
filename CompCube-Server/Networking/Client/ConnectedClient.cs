@@ -132,6 +132,9 @@ public class ConnectedClient(ILogger<ConnectedClient> logger) : IConnectedClient
             case UserPacket.UserPacketTypes.ScoreSubmission:
                 OnScoreSubmission?.Invoke(packet as ScoreSubmissionPacket ?? throw new InvalidOperationException(), this);
                 break;
+            case UserPacket.UserPacketTypes.ClientDisconnectPacket:
+                await Disconnect();
+                break;
             default:
                 await Disconnect();
                 throw new Exception("Unknown packet type!");
